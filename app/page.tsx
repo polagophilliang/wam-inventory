@@ -53,7 +53,6 @@ export default function App() {
     const { data: stok } = await supabase.from('stok_barang').select('*');
     if (stok) setStokData(stok);
 
-    // Ambil data posisi barang per gudang
     const { data: posisi } = await supabase.from('posisi_barang').select('*');
     if (posisi) setPosisiBarang(posisi);
   };
@@ -110,14 +109,21 @@ export default function App() {
       setFormData({ ...formData, qty: "", price: "", description: "", vendor_id: "", warehouse_id: "" });
       setSelectedItem(null);
       setSearchQuery("");
-      fetchAllData(); // Refresh data
+      fetchAllData(); 
     }
   };
 
-  // 4. Ambil Data Laporan
+  // 4. Ambil Data Laporan (Pakai relasi yang udah bener)
   const fetchReport = async () => {
     setIsLoadingReport(true);
-    let query = supabase.from('transactions').select('*, items!inner(name, sku), vendors!inner(name), warehouses!inner(name)');
+    
+    // Pakai format eksplisit nama kolom biar Supabase nggak bingung
+    let query = supabase.from('transactions').select(`
+      id, created_at, mutation_type, qty, price,
+      item_id, items(name, sku),
+      vendor_id, vendors(name),
+      warehouse_id, warehouses(name)
+    `);
     
     if (filterStart) query = query.gte('date', filterStart);
     if (filterEnd) query = query.lte('date', filterEnd);
@@ -128,6 +134,7 @@ export default function App() {
     if (!error && data) {
       setReportData(data);
     } else {
+      console.error(error);
       alert("Gagal ambil laporan: " + error?.message);
     }
     setIsLoadingReport(false);
@@ -153,19 +160,18 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto p-8">
         
-        {/* TAB DASHBOARD BARU */}
+        {/* TAB DASHBOARD */}
         {activeTab === "dashboard" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Dashboard Inventory</h2>
             
-            {/* Ringkasan Global */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h3 className="text-gray-500 text-sm font-medium">Total Master Barang</h3>
                 <p className="text-4xl font-bold mt-2 text-slate-800">{masterItems.length}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-gray-500 text-sm font-medium">Total Stok Tersedia (Semua Gudang)</h3>
+                <h3 className="text-gray-500 text-sm font-medium">Total Stok Tersedia</h3>
                 <p className="text-4xl font-bold mt-2 text-green-600">{stokData.reduce((acc, curr) => acc + (curr.stok_tersedia || 0), 0).toLocaleString()}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -174,7 +180,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Ringkasan Per Gudang (Seperti Sheet55) */}
             <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {masterWarehouses.map((wh) => {
@@ -305,7 +310,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB MASTER BARANG (DENGAN POSISI GUDANG) */}
+        {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
@@ -324,33 +329,35 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stokData.map((item) => {
-                    // Cari barang ini ada di gudang mana aja
-                    const lokasi = posisiBarang.filter(p => p.sku === item.sku);
-                    
-                    return (
-                      <tr key={item.sku} className="hover:bg-gray-50">
-                        <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
-                        <td className="p-3 border-b font-medium">{item.name}</td>
-                        <td className="p-3 border-b">{item.kategori}</td>
-                        <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
-                        <td className="p-3 border-b text-center text-red-600">{item.total_keluar}</td>
-                        <td className="p-3 border-b text-center text-yellow-600">{item.total_rusak}</td>
-                        <td className="p-3 border-b text-center font-bold text-blue-700">{item.stok_tersedia}</td>
-                        <td className="p-3 border-b text-xs">
-                          {lokasi.length === 0 ? "-" : (
-                            <div className="flex flex-col gap-1">
-                              {lokasi.map((l, i) => (
-                                <span key={i} className="bg-slate-100 px-2 py-1 rounded inline-block w-max border border-slate-200">
-                                  {l.nama_gudang}: <b>{l.qty_tersedia}</b>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {stokData.length === 0 ? (
+                    <tr><td colSpan={8} className="p-4 text-center text-gray-500">Memuat data / Belum ada data.</td></tr>
+                  ) : (
+                    stokData.map((item) => {
+                      const lokasi = posisiBarang.filter(p => p.sku === item.sku);
+                      return (
+                        <tr key={item.sku} className="hover:bg-gray-50">
+                          <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
+                          <td className="p-3 border-b font-medium">{item.name}</td>
+                          <td className="p-3 border-b">{item.kategori}</td>
+                          <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
+                          <td className="p-3 border-b text-center text-red-600">{item.total_keluar}</td>
+                          <td className="p-3 border-b text-center text-yellow-600">{item.total_rusak}</td>
+                          <td className="p-3 border-b text-center font-bold text-blue-700">{item.stok_tersedia}</td>
+                          <td className="p-3 border-b text-xs">
+                            {lokasi.length === 0 ? "-" : (
+                              <div className="flex flex-col gap-1">
+                                {lokasi.map((l, i) => (
+                                  <span key={i} className="bg-slate-100 px-2 py-1 rounded inline-block w-max border border-slate-200">
+                                    {l.nama_gudang}: <b>{l.qty_tersedia}</b>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -402,7 +409,7 @@ export default function App() {
                   {reportData.length === 0 ? (
                     <tr><td colSpan={7} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
-                    reportData.map((row) => (
+                    reportData.map((row: any) => (
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="p-3 border-b">{row.created_at?.split('T')[0]}</td>
                         <td className="p-3 border-b font-medium">{row.vendors?.name}</td>
