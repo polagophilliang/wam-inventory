@@ -220,36 +220,48 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB MASTER BARANG */}
+                {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang ({masterItems.length} Items)</h2>
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+              <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-100 text-gray-700 text-sm">
+                  <tr className="bg-gray-100 text-gray-700">
                     <th className="p-3 border-b">SKU</th>
                     <th className="p-3 border-b">Nama Barang</th>
                     <th className="p-3 border-b">Kategori</th>
-                    <th className="p-3 border-b">Satuan</th>
+                    <th className="p-3 border-b">Unit</th>
+                    <th className="p-3 border-b text-center bg-green-50 text-green-700">Masuk</th>
+                    <th className="p-3 border-b text-center bg-red-50 text-red-700">Keluar</th>
+                    <th className="p-3 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
+                    <th className="p-3 border-b text-center bg-blue-50 text-blue-700 font-bold">Tersedia</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {masterItems.map((item) => (
-                    <tr key={item.sku} className="hover:bg-gray-50 text-sm">
-                      <td className="p-3 border-b font-mono">{item.sku}</td>
-                      <td className="p-3 border-b">{item.name}</td>
-                      <td className="p-3 border-b">{item.categories?.name}</td>
-                      <td className="p-3 border-b">{item.unit}</td>
-                    </tr>
-                  ))}
+                  {masterItems.map((item: any) => {
+                    // Hitung manual sementara (karena belum nyambung ke View stok_barang)
+                    // Nanti kita ganti pake data dari Supabase View
+                    const masuk = 0; 
+                    const keluar = 0; 
+                    const rusak = 0;
+                    const tersedia = masuk - keluar - rusak;
+
+                    return (
+                      <tr key={item.sku} className="hover:bg-gray-50">
+                        <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
+                        <td className="p-3 border-b font-medium">{item.name}</td>
+                        <td className="p-3 border-b">{item.categories?.name}</td>
+                        <td className="p-3 border-b">{item.unit}</td>
+                        <td className="p-3 border-b text-center text-green-600">{masuk}</td>
+                        <td className="p-3 border-b text-center text-red-600">{keluar}</td>
+                        <td className="p-3 border-b text-center text-yellow-600">{rusak}</td>
+                        <td className="p-3 border-b text-center font-bold text-blue-700">{tersedia}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
         )}
-
-      </main>
-    </div>
-  );
-}
