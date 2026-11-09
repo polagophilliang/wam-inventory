@@ -138,7 +138,7 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  // 5. Fungsi Download Excel (CSV) - Diperbaiki pakai titik koma (;)
+  // 5. Fungsi Download Excel (CSV) - Rapi pakai titik koma
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
     
@@ -151,7 +151,7 @@ export default function App() {
         row.vendors?.name || "-",
         row.items?.name || "-",
         row.warehouses?.name || "-",
-        row.mutation_type, // Cukup angka 1,2,3
+        row.mutation_type, 
         row.qty,
         row.price || 0,
         total
@@ -232,17 +232,16 @@ export default function App() {
                       ) : (
                         <ul className="space-y-2">
                           {itemsDiGudang.map((item, idx) => (
-                            // Tanda strip (-) dan font diperkecil
                             <li key={idx} className="flex justify-between items-start border-b border-gray-100 pb-2 last:border-0 text-sm">
-                              <div className="pr-2 flex gap-1">
-                                <span className="text-slate-400">-</span>
+                              <div className="pr-2 flex gap-1.5">
+                                <span className="text-slate-400 text-xs mt-0.5">-</span>
                                 <div>
-                                  <p className="text-[13px] font-medium text-slate-700 leading-tight line-clamp-2">{item.nama_barang}</p>
+                                  <p className="text-[12px] font-normal text-slate-700 leading-tight line-clamp-2">{item.nama_barang}</p>
                                   <p className="text-[10px] text-gray-500 font-mono">{item.sku}</p>
                                 </div>
                               </div>
                               <div className="text-right whitespace-nowrap">
-                                <span className="font-bold text-blue-600">{item.qty_tersedia}</span>
+                                <span className="font-semibold text-blue-600 text-sm">{item.qty_tersedia}</span>
                               </div>
                             </li>
                           ))}
@@ -300,11 +299,11 @@ export default function App() {
 
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-500">CODE S/N</label>
-                <input type="text" value={selectedItem?.sku || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 font-mono font-bold" />
+                <input type="text" value={selectedItem?.sku || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 font-mono text-xs" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1 text-gray-500">KATEGORI</label>
-                <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100" />
+                <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
               <div>
@@ -354,17 +353,17 @@ export default function App() {
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-xs"> {/* Ukuran font tabel diperkecil */}
                 <thead>
-                  <tr className="bg-gray-100 text-gray-700">
-                    <th className="p-3 border-b">SKU</th>
-                    <th className="p-3 border-b">Nama Barang</th>
-                    <th className="p-3 border-b">Kategori</th>
-                    <th className="p-3 border-b text-center bg-green-50 text-green-700">Masuk</th>
-                    <th className="p-3 border-b text-center bg-red-50 text-red-700">Keluar</th>
-                    <th className="p-3 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
-                    <th className="p-3 border-b text-center bg-blue-50 text-blue-700">Tersedia</th>
-                    <th className="p-3 border-b">Posisi Gudang</th>
+                  <tr className="bg-gray-100 text-gray-700 font-semibold">
+                    <th className="p-2 border-b">SKU</th>
+                    <th className="p-2 border-b">Nama Barang</th>
+                    <th className="p-2 border-b">Kategori</th>
+                    <th className="p-2 border-b text-center bg-green-50 text-green-700">Masuk</th>
+                    <th className="p-2 border-b text-center bg-red-50 text-red-700">Keluar</th>
+                    <th className="p-2 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
+                    <th className="p-2 border-b text-center bg-blue-50 text-blue-700">Tersedia</th>
+                    <th className="p-2 border-b">Posisi Gudang</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -375,20 +374,20 @@ export default function App() {
                       const lokasi = posisiBarang.filter(p => p.sku === item.sku);
                       return (
                         <tr key={item.sku} className="hover:bg-gray-50">
-                          {/* SKU DIBIKIN TEBAL & MONO */}
-                          <td className="p-3 border-b font-mono font-bold text-sm text-slate-800">{item.sku}</td>
-                          <td className="p-3 border-b font-medium">{item.name}</td>
-                          <td className="p-3 border-b">{item.kategori}</td>
-                          <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
-                          <td className="p-3 border-b text-center text-red-600">{item.total_keluar}</td>
-                          <td className="p-3 border-b text-center text-yellow-600">{item.total_rusak}</td>
-                          <td className="p-3 border-b text-center font-bold text-blue-700">{item.stok_tersedia}</td>
-                          <td className="p-3 border-b text-xs">
+                          {/* SKU font mono tapi ukuran kecil, nggak tebal banget */}
+                          <td className="p-2 border-b font-mono text-[11px] text-slate-700">{item.sku}</td>
+                          <td className="p-2 border-b font-medium text-slate-800">{item.name}</td>
+                          <td className="p-2 border-b text-gray-600">{item.kategori}</td>
+                          <td className="p-2 border-b text-center text-green-600 font-medium">{item.total_masuk}</td>
+                          <td className="p-2 border-b text-center text-red-600 font-medium">{item.total_keluar}</td>
+                          <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
+                          <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
+                          <td className="p-2 border-b text-[10px]">
                             {lokasi.length === 0 ? "-" : (
                               <div className="flex flex-col gap-1">
                                 {lokasi.map((l, i) => (
-                                  <span key={i} className="bg-slate-100 px-2 py-1 rounded inline-block w-max border border-slate-200">
-                                    {l.nama_gudang}: <b>{l.qty_tersedia}</b>
+                                  <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
+                                    {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
                                   </span>
                                 ))}
                               </div>
@@ -440,16 +439,16 @@ export default function App() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-gray-100 text-gray-700">
-                    <th className="p-3 border-b">Tanggal</th>
-                    <th className="p-3 border-b">Vendor</th>
-                    <th className="p-3 border-b">Barang</th>
-                    <th className="p-3 border-b">Gudang</th>
-                    <th className="p-3 border-b text-center">Kode Mutasi</th>
-                    <th className="p-3 border-b text-center">Qty</th>
-                    <th className="p-3 border-b text-right">Total Harga</th>
+                  <tr className="bg-gray-100 text-gray-700 font-semibold">
+                    <th className="p-2 border-b">Tanggal</th>
+                    <th className="p-2 border-b">Vendor</th>
+                    <th className="p-2 border-b">Barang</th>
+                    <th className="p-2 border-b">Gudang</th>
+                    <th className="p-2 border-b text-center">Kode Mutasi</th>
+                    <th className="p-2 border-b text-center">Qty</th>
+                    <th className="p-2 border-b text-right">Total Harga</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -458,17 +457,17 @@ export default function App() {
                   ) : (
                     reportData.map((row: any) => (
                       <tr key={row.id} className="hover:bg-gray-50">
-                        <td className="p-3 border-b">{row.created_at?.split('T')[0]}</td>
-                        <td className="p-3 border-b font-medium">{row.vendors?.name}</td>
-                        <td className="p-3 border-b">
-                          <div className="font-medium">{row.items?.name}</div>
-                          <div className="font-mono font-bold text-xs text-slate-500">{row.items?.sku}</div>
+                        <td className="p-2 border-b text-gray-600">{row.created_at?.split('T')[0]}</td>
+                        <td className="p-2 border-b font-medium text-slate-800">{row.vendors?.name}</td>
+                        <td className="p-2 border-b">
+                          <div className="font-medium text-slate-800">{row.items?.name}</div>
+                          <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
                         </td>
-                        <td className="p-3 border-b">{row.warehouses?.name}</td>
-                        {/* UBAH TEKS JADI ANGKA SAJA */}
-                        <td className="p-3 border-b text-center font-bold text-slate-700">{row.mutation_type}</td>
-                        <td className="p-3 border-b text-center font-bold">{row.qty}</td>
-                        <td className="p-3 border-b text-right">{row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}</td>
+                        <td className="p-2 border-b text-gray-600">{row.warehouses?.name}</td>
+                        {/* KODE MUTASI HANYA ANGKA */}
+                        <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
+                        <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
+                        <td className="p-2 border-b text-right text-gray-700">{row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}</td>
                       </tr>
                     ))
                   )}
