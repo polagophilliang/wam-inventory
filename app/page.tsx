@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // --- INISIALISASI SUPABASE ---
 // Ganti 2 baris di atas dengan ini:
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = "https://fhwsdlclewkndlqxdosf.supabase.co";
+const supabaseKey = "sb_publishable_FZPM7W77qu85aYaia5GrFA_q5GSJmhd";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- DUMMY DATA BARANG ---
