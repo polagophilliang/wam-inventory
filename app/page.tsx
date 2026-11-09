@@ -159,7 +159,7 @@ export default function App() {
       ];
     });
 
-    // Gunakan titik koma (;) sebagai pemisah, khusus untuk Excel Indonesia
+    // Pakai titik koma (;) sebagai pemisah
 const csvContent = [headers, ...rows]
   .map(e => e.map(item => String(item).replace(/;/g, ',')).join(";")) 
   .join("\n");
@@ -377,7 +377,7 @@ const csvContent = [headers, ...rows]
                       const lokasi = posisiBarang.filter(p => p.sku === item.sku);
                       return (
                         <tr key={item.sku} className="hover:bg-gray-50">
-                          <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
+                          <td className="p-3 border-b font-mono font-bold text-sm text-slate-800">{item.sku}</td>
                           <td className="p-3 border-b font-medium">{item.name}</td>
                           <td className="p-3 border-b">{item.kategori}</td>
                           <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
@@ -463,6 +463,10 @@ const csvContent = [headers, ...rows]
                         <td className="p-3 border-b">{row.created_at?.split('T')[0]}</td>
                         <td className="p-3 border-b font-medium">{row.vendors?.name}</td>
                         <td className="p-3 border-b">{row.items?.name}</td>
+                        <td className="p-3 border-b">
+  <div className="font-medium">{row.items?.name}</div>
+  <div className="font-mono font-bold text-xs text-slate-500">{row.items?.sku}</div>
+</td>
                         <td className="p-3 border-b">{row.warehouses?.name}</td>
                         <td className="p-3 border-b text-center">
                           {row.mutation_type === 1 ? <span className="text-green-600 font-bold">IN</span> : row.mutation_type === 2 ? <span className="text-red-600 font-bold">OUT</span> : <span className="text-yellow-600 font-bold">RUSAK</span>}
