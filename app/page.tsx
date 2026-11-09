@@ -14,7 +14,7 @@ export default function App() {
   const [masterVendors, setMasterVendors] = useState<any[]>([]);
   const [masterWarehouses, setMasterWarehouses] = useState<any[]>([]);
   const [stokData, setStokData] = useState<any[]>([]);
-  const [ringkasanGudang, setRingkasanGudang] = useState<any[]>([]);
+  const [posisiBarang, setPosisiBarang] = useState<any[]>([]);
   
   // State Form
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -53,8 +53,9 @@ export default function App() {
     const { data: stok } = await supabase.from('stok_barang').select('*');
     if (stok) setStokData(stok);
 
-    const { data: ringkasan } = await supabase.from('ringkasan_gudang').select('*');
-    if (ringkasan) setRingkasanGudang(ringkasan);
+    // Ambil data posisi barang per gudang
+    const { data: posisi } = await supabase.from('posisi_barang').select('*');
+    if (posisi) setPosisiBarang(posisi);
   };
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function App() {
   // 4. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
-    let query = supabase.from('transactions').select('*, items(name, sku), vendors(name), warehouses(name)');
+    let query = supabase.from('transactions').select('*, items!inner(name, sku), vendors!inner(name), warehouses!inner(name)');
     
     if (filterStart) query = query.gte('date', filterStart);
     if (filterEnd) query = query.lte('date', filterEnd);
@@ -132,9 +133,6 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  // Kelompokkan Ringkasan Gudang berdasarkan nama Gudang
-  const gudangUnik = masterWarehouses.map(w => w.name);
-  
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
@@ -179,14 +177,13 @@ export default function App() {
             {/* Ringkasan Per Gudang (Seperti Sheet55) */}
             <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {gudangUnik.map((gudangName) => {
-                // Filter data ringkasan cuma buat gudang ini aja
-                const itemsDiGudang = ringkasanGudang.filter(r => r.gudang === gudangName && r.stok_tersedia > 0);
-                
+              {masterWarehouses.map((wh) => {
+                const itemsDiGudang = posisiBarang.filter(r => r.nama_gudang === wh.name);
                 return (
-                  <div key={gudangName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-slate-800 text-white p-3 font-bold text-sm">
-                      {gudangName}
+                  <div key={wh.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-slate-800 text-white p-3 font-bold text-sm flex justify-between">
+                      <span>{wh.name}</span>
+                      <span className="bg-slate-700 px-2 rounded">{itemsDiGudang.length} Items</span>
                     </div>
                     <div className="p-4 max-h-60 overflow-y-auto">
                       {itemsDiGudang.length === 0 ? (
@@ -194,13 +191,13 @@ export default function App() {
                       ) : (
                         <ul className="space-y-3">
                           {itemsDiGudang.map((item, idx) => (
-                            <li key={idx} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <li key={idx} className="flex justify-between items-center border-b border-gray-100 pb-2 last:border-0">
                               <div className="pr-2">
-                                <p className="text-sm font-semibold text-slate-700 leading-tight">{item.nama_barang}</p>
+                                <p className="text-sm font-semibold text-slate-700 leading-tight line-clamp-2">{item.nama_barang}</p>
                                 <p className="text-xs text-gray-500">{item.sku}</p>
                               </div>
                               <div className="text-right whitespace-nowrap">
-                                <span className="font-bold text-blue-600">{item.stok_tersedia}</span>
+                                <span className="font-bold text-blue-600">{item.qty_tersedia}</span>
                                 <span className="text-xs text-gray-500 ml-1">{item.unit}</span>
                               </div>
                             </li>
@@ -308,7 +305,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB MASTER BARANG (DENGAN STOK) */}
+        {/* TAB MASTER BARANG (DENGAN POSISI GUDANG) */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
@@ -323,20 +320,37 @@ export default function App() {
                     <th className="p-3 border-b text-center bg-red-50 text-red-700">Keluar</th>
                     <th className="p-3 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
                     <th className="p-3 border-b text-center bg-blue-50 text-blue-700">Tersedia</th>
+                    <th className="p-3 border-b">Posisi Gudang</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stokData.map((item) => (
-                    <tr key={item.sku} className="hover:bg-gray-50">
-                      <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
-                      <td className="p-3 border-b font-medium">{item.name}</td>
-                      <td className="p-3 border-b">{item.kategori}</td>
-                      <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
-                      <td className="p-3 border-b text-center text-red-600">{item.total_keluar}</td>
-                      <td className="p-3 border-b text-center text-yellow-600">{item.total_rusak}</td>
-                      <td className="p-3 border-b text-center font-bold text-blue-700">{item.stok_tersedia}</td>
-                    </tr>
-                  ))}
+                  {stokData.map((item) => {
+                    // Cari barang ini ada di gudang mana aja
+                    const lokasi = posisiBarang.filter(p => p.sku === item.sku);
+                    
+                    return (
+                      <tr key={item.sku} className="hover:bg-gray-50">
+                        <td className="p-3 border-b font-mono text-xs">{item.sku}</td>
+                        <td className="p-3 border-b font-medium">{item.name}</td>
+                        <td className="p-3 border-b">{item.kategori}</td>
+                        <td className="p-3 border-b text-center text-green-600">{item.total_masuk}</td>
+                        <td className="p-3 border-b text-center text-red-600">{item.total_keluar}</td>
+                        <td className="p-3 border-b text-center text-yellow-600">{item.total_rusak}</td>
+                        <td className="p-3 border-b text-center font-bold text-blue-700">{item.stok_tersedia}</td>
+                        <td className="p-3 border-b text-xs">
+                          {lokasi.length === 0 ? "-" : (
+                            <div className="flex flex-col gap-1">
+                              {lokasi.map((l, i) => (
+                                <span key={i} className="bg-slate-100 px-2 py-1 rounded inline-block w-max border border-slate-200">
+                                  {l.nama_gudang}: <b>{l.qty_tersedia}</b>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
