@@ -159,9 +159,10 @@ export default function App() {
       ];
     });
 
-    const csvContent = [headers, ...rows]
-      .map(e => e.map(item => `"${item}"`).join(","))
-      .join("\n");
+    // Gunakan titik koma (;) sebagai pemisah, khusus untuk Excel Indonesia
+const csvContent = [headers, ...rows]
+  .map(e => e.map(item => String(item).replace(/;/g, ',')).join(";")) 
+  .join("\n");
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
