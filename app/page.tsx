@@ -32,12 +32,27 @@ export default function App() {
     description: ""
   });
 
-  // State Laporan
+    // State Laporan
   const [reportData, setReportData] = useState<any[]>([]);
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
+
+  // --- TAMBAHAN BARU UNTUK LAPORAN BULANAN ---
+  const [bulan, setBulan] = useState(new Date().getMonth() + 1);
+  const [tahun, setTahun] = useState(new Date().getFullYear());
+  const [laporanBulanan, setLaporanBulanan] = useState<any[]>([]);
+  const [isLoadingBulanan, setIsLoadingBulanan] = useState(false);
+
+  const fetchLaporanBulanan = async () => {
+    setIsLoadingBulanan(true);
+    const { data, error } = await supabase.rpc('laporan_stok_bulanan', { p_tahun: tahun, p_bulan: bulan });
+    if (!error && data) setLaporanBulanan(data);
+    else alert("Gagal ambil laporan bulanan: " + error?.message);
+    setIsLoadingBulanan(false);
+  };
+  // ------------------------------------------
 
   // 1. Ambil Semua Data
   const fetchAllData = async () => {
@@ -186,11 +201,15 @@ export default function App() {
             <p className="text-xs text-slate-400">Stockist System</p>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+                <nav className="flex-1 p-4 space-y-2">
           <button onClick={() => setActiveTab("dashboard")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'dashboard' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Dashboard</button>
           <button onClick={() => setActiveTab("entry")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'entry' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Data Entry</button>
           <button onClick={() => setActiveTab("master")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'master' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Master Barang</button>
           <button onClick={() => setActiveTab("report")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'report' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Laporan</button>
+          
+          {/* TAMBAHAN BARU: Tombol Lap. Bulanan */}
+          <button onClick={() => setActiveTab("lap_bulanan")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'lap_bulanan' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Lap. Bulanan</button>
+
         </nav>
       </aside>
 
@@ -471,12 +490,71 @@ export default function App() {
                       </tr>
                     ))
                   )}
+                
                 </tbody>
               </table>
             </div>
           </div>
         )}
+                {/* TAB LAPORAN BULANAN */}
+        {activeTab === "lap_bulanan" && (
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Stok Bulanan (Cut Off)</h2>
+            
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex gap-4 items-end flex-wrap">
+              <div>
+                <label className="block text-sm font-medium mb-1">Bulan</label>
+                <select value={bulan} onChange={e => setBulan(parseInt(e.target.value))} className="p-2 border rounded-lg">
+                  {[...Array(12)].map((_, i) => (
+                    <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Tahun</label>
+                <input type="number" value={tahun} onChange={e => setTahun(parseInt(e.target.value))} className="p-2 border rounded-lg w-24" />
+              </div>
+              <button onClick={fetchLaporanBulanan} disabled={isLoadingBulanan} className="bg-slate-800 text-white px-6 py-2 rounded-lg hover:bg-slate-700 h-[42px]">
+                {isLoadingBulanan ? "Memuat..." : "Tampilkan"}
+              </button>
+            </div>
 
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-100 text-gray-700 font-semibold">
+                    <th className="p-2 border-b">SKU</th>
+                    <th className="p-2 border-b">Nama Barang</th>
+                    <th className="p-2 border-b">Gudang</th>
+                    <th className="p-2 border-b text-center bg-slate-200">Stok Awal</th>
+                    <th className="p-2 border-b text-center bg-green-50 text-green-700">Masuk</th>
+                    <th className="p-2 border-b text-center bg-red-50 text-red-700">Keluar</th>
+                    <th className="p-2 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
+                    <th className="p-2 border-b text-center bg-blue-100 text-blue-800">Stok Akhir</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {laporanBulanan.length === 0 ? (
+                    <tr><td colSpan={8} className="p-4 text-center text-gray-500">Belum ada data untuk bulan ini.</td></tr>
+                  ) : (
+                    laporanBulanan.map((row: any, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="p-2 border-b font-mono text-[11px] text-slate-700">{row.sku}</td>
+                        <td className="p-2 border-b font-medium text-slate-800">{row.nama_barang}</td>
+                        <td className="p-2 border-b text-gray-600">{row.nama_gudang}</td>
+                        <td className="p-2 border-b text-center bg-slate-50">{row.stok_awal}</td>
+                        <td className="p-2 border-b text-center text-green-600">{row.total_masuk}</td>
+                        <td className="p-2 border-b text-center text-red-600">{row.total_keluar}</td>
+                        <td className="p-2 border-b text-center text-yellow-600">{row.total_rusak}</td>
+                        <td className="p-2 border-b text-center font-bold text-blue-700">{row.stok_akhir}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
