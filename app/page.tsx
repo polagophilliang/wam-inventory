@@ -113,11 +113,10 @@ export default function App() {
     }
   };
 
-  // 4. Ambil Data Laporan (Pakai relasi yang udah bener)
+    // 4. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
-    
-    // Pakai format eksplisit nama kolom biar Supabase nggak bingung
+    // Ubah !inner jadi left join (default), biar data kosong tetep kebaca
     let query = supabase.from('transactions').select(`
       id, created_at, mutation_type, qty, price,
       item_id, items(name, sku),
