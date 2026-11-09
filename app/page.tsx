@@ -12,7 +12,9 @@ export default function App() {
   // State Master
   const [masterItems, setMasterItems] = useState<any[]>([]);
   const [masterVendors, setMasterVendors] = useState<any[]>([]);
+  const [masterWarehouses, setMasterWarehouses] = useState<any[]>([]);
   const [stokData, setStokData] = useState<any[]>([]);
+  const [ringkasanGudang, setRingkasanGudang] = useState<any[]>([]);
   
   // State Form
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -23,7 +25,7 @@ export default function App() {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     mutation_type: "1",
-    warehouse: "China 1",
+    warehouse_id: "",
     vendor_id: "",
     qty: "",
     price: "",
@@ -37,7 +39,7 @@ export default function App() {
   const [filterVendor, setFilterVendor] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
-  // 1. Ambil Semua Data (Master + Stok)
+  // 1. Ambil Semua Data
   const fetchAllData = async () => {
     const { data: items } = await supabase.from('items').select('*, categories(name)').order('name');
     if (items) setMasterItems(items);
@@ -45,8 +47,14 @@ export default function App() {
     const { data: vendors } = await supabase.from('vendors').select('*').order('name');
     if (vendors) setMasterVendors(vendors);
 
+    const { data: warehouses } = await supabase.from('warehouses').select('*').order('name');
+    if (warehouses) setMasterWarehouses(warehouses);
+
     const { data: stok } = await supabase.from('stok_barang').select('*');
     if (stok) setStokData(stok);
+
+    const { data: ringkasan } = await supabase.from('ringkasan_gudang').select('*');
+    if (ringkasan) setRingkasanGudang(ringkasan);
   };
 
   useEffect(() => {
@@ -76,6 +84,7 @@ export default function App() {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
     if (!formData.vendor_id) return alert("Pilih Vendor dulu!");
+    if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
     
     setIsLoading(true);
 
@@ -85,9 +94,10 @@ export default function App() {
         mutation_type: parseInt(formData.mutation_type),
         item_id: selectedItem.id,
         vendor_id: parseInt(formData.vendor_id),
+        warehouse_id: parseInt(formData.warehouse_id),
         qty: parseInt(formData.qty),
         price: parseInt(formData.price) || 0,
-        description: `${formData.warehouse} | ${formData.description}`
+        description: formData.description
       }]);
 
     setIsLoading(false);
@@ -96,17 +106,17 @@ export default function App() {
       alert("Gagal menyimpan: " + error.message);
     } else {
       alert("🎉 Transaksi Berhasil Disimpan!");
-      setFormData({ ...formData, qty: "", price: "", description: "", vendor_id: "" });
+      setFormData({ ...formData, qty: "", price: "", description: "", vendor_id: "", warehouse_id: "" });
       setSelectedItem(null);
       setSearchQuery("");
-      fetchAllData(); // Refresh data stok
+      fetchAllData(); // Refresh data
     }
   };
 
   // 4. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
-    let query = supabase.from('transactions').select('*, items(name, sku), vendors(name)');
+    let query = supabase.from('transactions').select('*, items(name, sku), vendors(name), warehouses(name)');
     
     if (filterStart) query = query.gte('date', filterStart);
     if (filterEnd) query = query.lte('date', filterEnd);
@@ -122,8 +132,9 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  const totalStokTersedia = stokData.reduce((acc, curr) => acc + (curr.stok_tersedia || 0), 0);
-
+  // Kelompokkan Ringkasan Gudang berdasarkan nama Gudang
+  const gudangUnik = masterWarehouses.map(w => w.name);
+  
   return (
     <div className="flex h-screen bg-gray-50">
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
@@ -144,23 +155,62 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto p-8">
         
-        {/* TAB DASHBOARD */}
+        {/* TAB DASHBOARD BARU */}
         {activeTab === "dashboard" && (
           <div>
-            <h2 className="text-2xl font-bold mb-6 text-slate-800">Ringkasan Inventory</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">Dashboard Inventory</h2>
+            
+            {/* Ringkasan Global */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h3 className="text-gray-500 text-sm font-medium">Total Master Barang</h3>
                 <p className="text-4xl font-bold mt-2 text-slate-800">{masterItems.length}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-gray-500 text-sm font-medium">Total Stok Tersedia</h3>
-                <p className="text-4xl font-bold mt-2 text-green-600">{totalStokTersedia.toLocaleString()}</p>
+                <h3 className="text-gray-500 text-sm font-medium">Total Stok Tersedia (Semua Gudang)</h3>
+                <p className="text-4xl font-bold mt-2 text-green-600">{stokData.reduce((acc, curr) => acc + (curr.stok_tersedia || 0), 0).toLocaleString()}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <h3 className="text-gray-500 text-sm font-medium">Total Vendor Terdaftar</h3>
                 <p className="text-4xl font-bold mt-2 text-blue-600">{masterVendors.length}</p>
               </div>
+            </div>
+
+            {/* Ringkasan Per Gudang (Seperti Sheet55) */}
+            <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {gudangUnik.map((gudangName) => {
+                // Filter data ringkasan cuma buat gudang ini aja
+                const itemsDiGudang = ringkasanGudang.filter(r => r.gudang === gudangName && r.stok_tersedia > 0);
+                
+                return (
+                  <div key={gudangName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-slate-800 text-white p-3 font-bold text-sm">
+                      {gudangName}
+                    </div>
+                    <div className="p-4 max-h-60 overflow-y-auto">
+                      {itemsDiGudang.length === 0 ? (
+                        <p className="text-gray-400 text-sm text-center py-4">Belum ada stok</p>
+                      ) : (
+                        <ul className="space-y-3">
+                          {itemsDiGudang.map((item, idx) => (
+                            <li key={idx} className="flex justify-between items-center border-b border-gray-100 pb-2">
+                              <div className="pr-2">
+                                <p className="text-sm font-semibold text-slate-700 leading-tight">{item.nama_barang}</p>
+                                <p className="text-xs text-gray-500">{item.sku}</p>
+                              </div>
+                              <div className="text-right whitespace-nowrap">
+                                <span className="font-bold text-blue-600">{item.stok_tersedia}</span>
+                                <span className="text-xs text-gray-500 ml-1">{item.unit}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -227,14 +277,11 @@ export default function App() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Gudang</label>
-                <select name="warehouse" value={formData.warehouse} onChange={handleChange} className="w-full p-2 border rounded-lg">
-                  <option>China 1</option>
-                  <option>China 2</option>
-                  <option>Cat</option>
-                  <option>Sparepart & Tools</option>
-                  <option>General 1</option>
-                  <option>General 2</option>
-                  <option>General 3</option>
+                <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
+                  <option value="">-- Pilih Gudang --</option>
+                  {masterWarehouses.map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -331,6 +378,7 @@ export default function App() {
                     <th className="p-3 border-b">Tanggal</th>
                     <th className="p-3 border-b">Vendor</th>
                     <th className="p-3 border-b">Barang</th>
+                    <th className="p-3 border-b">Gudang</th>
                     <th className="p-3 border-b text-center">Mutasi</th>
                     <th className="p-3 border-b text-center">Qty</th>
                     <th className="p-3 border-b text-right">Total Harga</th>
@@ -338,13 +386,14 @@ export default function App() {
                 </thead>
                 <tbody>
                   {reportData.length === 0 ? (
-                    <tr><td colSpan={6} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
+                    <tr><td colSpan={7} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
                     reportData.map((row) => (
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="p-3 border-b">{row.created_at?.split('T')[0]}</td>
                         <td className="p-3 border-b font-medium">{row.vendors?.name}</td>
                         <td className="p-3 border-b">{row.items?.name}</td>
+                        <td className="p-3 border-b">{row.warehouses?.name}</td>
                         <td className="p-3 border-b text-center">
                           {row.mutation_type === 1 ? <span className="text-green-600 font-bold">IN</span> : row.mutation_type === 2 ? <span className="text-red-600 font-bold">OUT</span> : <span className="text-yellow-600 font-bold">RUSAK</span>}
                         </td>
