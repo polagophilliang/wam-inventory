@@ -106,6 +106,7 @@ export default function App() {
     const { error } = await supabase
       .from('transactions')
       .insert([{ 
+        date: formData.date,
         mutation_type: parseInt(formData.mutation_type),
         item_id: selectedItem.id,
         vendor_id: parseInt(formData.vendor_id),
