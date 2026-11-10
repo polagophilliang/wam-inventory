@@ -32,14 +32,14 @@ export default function App() {
     description: ""
   });
 
-    // State Laporan
+  // State Laporan
   const [reportData, setReportData] = useState<any[]>([]);
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
-  // --- TAMBAHAN BARU UNTUK LAPORAN BULANAN ---
+  // State Laporan Bulanan
   const [bulan, setBulan] = useState(new Date().getMonth() + 1);
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [laporanBulanan, setLaporanBulanan] = useState<any[]>([]);
@@ -52,7 +52,6 @@ export default function App() {
     else alert("Gagal ambil laporan bulanan: " + error?.message);
     setIsLoadingBulanan(false);
   };
-  // ------------------------------------------
 
   // 1. Ambil Semua Data
   const fetchAllData = async () => {
@@ -62,7 +61,8 @@ export default function App() {
     const { data: vendors } = await supabase.from('vendors').select('*').order('name');
     if (vendors) setMasterVendors(vendors);
 
-    const { data: warehouses } = await supabase.from('warehouses').select('*').order('name');
+    // INI YANG TADI KURANG: Tambahin 'description' biar keterangan zona muncul
+    const { data: warehouses } = await supabase.from('warehouses').select('*, description').order('name');
     if (warehouses) setMasterWarehouses(warehouses);
 
     const { data: stok } = await supabase.from('stok_barang').select('*');
@@ -154,7 +154,7 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  // 5. Fungsi Download Excel (CSV) - Rapi pakai titik koma
+  // 5. Fungsi Download Excel (CSV)
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
     
@@ -187,9 +187,9 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
   };
-
-  return (
+    return (
     <div className="flex h-screen bg-gray-50">
+      {/* SIDEBAR */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
         <div className="p-4 flex items-center gap-3 border-b border-slate-700">
           <img 
@@ -202,15 +202,12 @@ export default function App() {
             <p className="text-xs text-slate-400">Stockist System</p>
           </div>
         </div>
-                <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2">
           <button onClick={() => setActiveTab("dashboard")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'dashboard' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Dashboard</button>
           <button onClick={() => setActiveTab("entry")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'entry' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Data Entry</button>
           <button onClick={() => setActiveTab("master")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'master' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Master Barang</button>
           <button onClick={() => setActiveTab("report")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'report' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Laporan</button>
-          
-          {/* TAMBAHAN BARU: Tombol Lap. Bulanan */}
           <button onClick={() => setActiveTab("lap_bulanan")} className={`block w-full text-left px-4 py-2 rounded-lg ${activeTab === 'lap_bulanan' ? 'bg-slate-800 text-blue-400' : 'text-slate-300 hover:bg-slate-800'}`}>Lap. Bulanan</button>
-
         </nav>
       </aside>
 
@@ -238,10 +235,9 @@ export default function App() {
 
             <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {masterWarehouses.map((wh) => {
+              {masterWarehouses.map((wh) => {
                 const itemsDiGudang = posisiBarang.filter(r => r.nama_gudang === wh.name);
                 
-                // Tentukan warna berdasarkan nama Zona
                 let borderColor = "border-slate-500";
                 let badgeColor = "bg-slate-700";
                 let descColor = "text-slate-500";
@@ -259,7 +255,6 @@ export default function App() {
                         <h4 className="font-bold text-slate-800 text-lg">{wh.name}</h4>
                         <span className={`${badgeColor} text-white text-xs px-2 py-1 rounded-full`}>{itemsDiGudang.length} Items</span>
                       </div>
-                      {/* Keterangan Zona */}
                       <p className={`text-[11px] italic leading-tight ${descColor}`}>
                         {wh.description || "Belum ada keterangan"}
                       </p>
@@ -290,6 +285,9 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
 
         {/* TAB DATA ENTRY */}
         {activeTab === "entry" && (
@@ -383,13 +381,12 @@ export default function App() {
             </form>
           </div>
         )}
-
-        {/* TAB MASTER BARANG */}
+                {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs"> {/* Ukuran font tabel diperkecil */}
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-gray-100 text-gray-700 font-semibold">
                     <th className="p-2 border-b">SKU</th>
@@ -410,7 +407,6 @@ export default function App() {
                       const lokasi = posisiBarang.filter(p => p.sku === item.sku);
                       return (
                         <tr key={item.sku} className="hover:bg-gray-50">
-                          {/* SKU font mono tapi ukuran kecil, nggak tebal banget */}
                           <td className="p-2 border-b font-mono text-[11px] text-slate-700">{item.sku}</td>
                           <td className="p-2 border-b font-medium text-slate-800">{item.name}</td>
                           <td className="p-2 border-b text-gray-600">{item.kategori}</td>
@@ -500,20 +496,19 @@ export default function App() {
                           <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
                         </td>
                         <td className="p-2 border-b text-gray-600">{row.warehouses?.name}</td>
-                        {/* KODE MUTASI HANYA ANGKA */}
                         <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
                         <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
                         <td className="p-2 border-b text-right text-gray-700">{row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}</td>
                       </tr>
                     ))
                   )}
-                
                 </tbody>
               </table>
             </div>
           </div>
         )}
-                {/* TAB LAPORAN BULANAN */}
+
+        {/* TAB LAPORAN BULANAN */}
         {activeTab === "lap_bulanan" && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Stok Bulanan (Cut Off)</h2>
@@ -572,8 +567,10 @@ export default function App() {
             </div>
           </div>
         )}
+
       </main>
     </div>
   );
 }
+
 
