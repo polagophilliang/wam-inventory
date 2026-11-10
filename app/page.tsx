@@ -238,14 +238,33 @@ export default function App() {
 
             <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {masterWarehouses.map((wh) => {
+                            {masterWarehouses.map((wh) => {
                 const itemsDiGudang = posisiBarang.filter(r => r.nama_gudang === wh.name);
+                
+                // Tentukan warna berdasarkan nama Zona
+                let borderColor = "border-slate-500";
+                let badgeColor = "bg-slate-700";
+                let descColor = "text-slate-500";
+
+                if (wh.name === "ZONA A") { borderColor = "border-blue-500"; badgeColor = "bg-blue-600"; descColor = "text-blue-600"; }
+                else if (wh.name === "ZONA B") { borderColor = "border-orange-500"; badgeColor = "bg-orange-600"; descColor = "text-orange-600"; }
+                else if (wh.name === "ZONA C") { borderColor = "border-green-500"; badgeColor = "bg-green-600"; descColor = "text-green-600"; }
+                else if (wh.name === "ZONA D") { borderColor = "border-purple-500"; badgeColor = "bg-purple-600"; descColor = "text-purple-600"; }
+                else if (wh.name === "FLOOR") { borderColor = "border-rose-500"; badgeColor = "bg-rose-600"; descColor = "text-rose-600"; }
+
                 return (
-                  <div key={wh.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-slate-800 text-white p-3 font-bold text-sm flex justify-between">
-                      <span>{wh.name}</span>
-                      <span className="bg-slate-700 px-2 rounded">{itemsDiGudang.length} Items</span>
+                  <div key={wh.id} className={`bg-white rounded-xl shadow-sm border-t-4 ${borderColor} border-x border-b border-gray-200 overflow-hidden`}>
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className="font-bold text-slate-800 text-lg">{wh.name}</h4>
+                        <span className={`${badgeColor} text-white text-xs px-2 py-1 rounded-full`}>{itemsDiGudang.length} Items</span>
+                      </div>
+                      {/* Keterangan Zona */}
+                      <p className={`text-[11px] italic leading-tight ${descColor}`}>
+                        {wh.description || "Belum ada keterangan"}
+                      </p>
                     </div>
+                    
                     <div className="p-4 max-h-60 overflow-y-auto">
                       {itemsDiGudang.length === 0 ? (
                         <p className="text-gray-400 text-sm text-center py-4">Belum ada stok</p>
@@ -261,7 +280,7 @@ export default function App() {
                                 </div>
                               </div>
                               <div className="text-right whitespace-nowrap">
-                                <span className="font-semibold text-blue-600 text-sm">{item.qty_tersedia}</span>
+                                <span className="font-semibold text-slate-800 text-sm">{item.qty_tersedia}</span>
                               </div>
                             </li>
                           ))}
@@ -271,9 +290,6 @@ export default function App() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
 
         {/* TAB DATA ENTRY */}
         {activeTab === "entry" && (
