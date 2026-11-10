@@ -15,6 +15,8 @@ export default function App() {
   const [masterWarehouses, setMasterWarehouses] = useState<any[]>([]);
   const [stokData, setStokData] = useState<any[]>([]);
   const [posisiBarang, setPosisiBarang] = useState<any[]>([]);
+  const [searchMaster, setSearchMaster] = useState("");
+  const [filterKategori, setFilterKategori] = useState("");
   
   // State Form
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -381,10 +383,40 @@ export default function App() {
             </form>
           </div>
         )}
-                {/* TAB MASTER BARANG */}
+                        {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
+            
+            {/* FITUR PENCARIAN & FILTER */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4 flex gap-4 items-center flex-wrap">
+              <div className="flex-1 min-w-[300px]">
+                <input 
+                  type="text" 
+                  placeholder="Cari nama barang atau SKU..." 
+                  value={searchMaster}
+                  onChange={(e) => setSearchMaster(e.target.value)}
+                  className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white transition-colors"
+                />
+              </div>
+              <div>
+                <select 
+                  value={filterKategori} 
+                  onChange={(e) => setFilterKategori(e.target.value)}
+                  className="p-2 border rounded-lg min-w-[200px]"
+                >
+                  <option value="">Semua Kategori</option>
+                  <option value="AKSESORIS">AKSESORIS</option>
+                  <option value="ARMADA">ARMADA</option>
+                  <option value="CONSUMABLE">CONSUMABLE</option>
+                  <option value="MESIN">MESIN</option>
+                  <option value="SPAREPART">SPAREPART</option>
+                  <option value="TOOLS">TOOLS</option>
+                  <option value="SERVICES">SERVICES</option>
+                </select>
+              </div>
+            </div>
+
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -403,38 +435,43 @@ export default function App() {
                   {stokData.length === 0 ? (
                     <tr><td colSpan={8} className="p-4 text-center text-gray-500">Memuat data / Belum ada data.</td></tr>
                   ) : (
-                    stokData.map((item) => {
-                      const lokasi = posisiBarang.filter(p => p.sku === item.sku);
-                      return (
-                        <tr key={item.sku} className="hover:bg-gray-50">
-                          <td className="p-2 border-b font-mono text-[11px] text-slate-700">{item.sku}</td>
-                          <td className="p-2 border-b font-medium text-slate-800">{item.name}</td>
-                          <td className="p-2 border-b text-gray-600">{item.kategori}</td>
-                          <td className="p-2 border-b text-center text-green-600 font-medium">{item.total_masuk}</td>
-                          <td className="p-2 border-b text-center text-red-600 font-medium">{item.total_keluar}</td>
-                          <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
-                          <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
-                          <td className="p-2 border-b text-[10px]">
-                            {lokasi.length === 0 ? "-" : (
-                              <div className="flex flex-col gap-1">
-                                {lokasi.map((l, i) => (
-                                  <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
-                                    {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
+                    stokData
+                      .filter(item => 
+                        (item.name || "").toLowerCase().includes(searchMaster.toLowerCase()) || 
+                        (item.sku || "").toLowerCase().includes(searchMaster.toLowerCase())
+                      )
+                      .filter(item => filterKategori === "" || item.kategori === filterKategori)
+                      .map((item) => {
+                        const lokasi = posisiBarang.filter(p => p.sku === item.sku);
+                        return (
+                          <tr key={item.sku} className="hover:bg-gray-50">
+                            <td className="p-2 border-b font-mono text-[11px] text-slate-700">{item.sku}</td>
+                            <td className="p-2 border-b font-medium text-slate-800">{item.name}</td>
+                            <td className="p-2 border-b text-gray-600">{item.kategori}</td>
+                            <td className="p-2 border-b text-center text-green-600 font-medium">{item.total_masuk}</td>
+                            <td className="p-2 border-b text-center text-red-600 font-medium">{item.total_keluar}</td>
+                            <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
+                            <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
+                            <td className="p-2 border-b text-[10px]">
+                              {lokasi.length === 0 ? "-" : (
+                                <div className="flex flex-col gap-1">
+                                  {lokasi.map((l, i) => (
+                                    <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
+                                      {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                   )}
                 </tbody>
               </table>
             </div>
           </div>
         )}
-
         {/* TAB LAPORAN */}
         {activeTab === "report" && (
           <div className="max-w-6xl mx-auto">
