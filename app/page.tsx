@@ -274,7 +274,7 @@ export default function App() {
       prefix: prefix
     }]);
 
-    setIsLoading(false);
+        setIsLoading(false);
     if (error) {
       alert("Gagal nambah barang: " + error.message);
     } else {
@@ -283,8 +283,9 @@ export default function App() {
       setShowAddItemForm(false);
       fetchAllData();
     }
-  };
-    return (
+  }; 
+
+  return 
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
