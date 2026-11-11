@@ -38,6 +38,7 @@ export default function App() {
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
+  const [filterMutasi, setFilterMutasi] = useState(""); // Filter Grouping Kode
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   // State Laporan Bulanan
@@ -114,8 +115,15 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
-    if (formData.mutation_type === "1" && !formData.vendor_id) return alert("Pilih Vendor dulu!");
-    if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
+    
+    // Validasi
+    if (formData.mutation_type === "1") {
+      if (!formData.vendor_id) return alert("Pilih Vendor dulu!");
+      if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
+    } else {
+      if (!formData.warehouse_id) return alert("Pilih Tujuan dulu!");
+      if (!formData.description) return alert("Keterangan WAJIB diisi buat Barang Keluar/Rusak!");
+    }
     
     setIsLoading(true);
 
@@ -180,7 +188,7 @@ export default function App() {
     }
   };
 
-  // 5. Ambil Data Laporan
+  // 5. Ambil Data Laporan (Dengan Grouping Kode Mutasi)
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
@@ -193,6 +201,7 @@ export default function App() {
     if (filterStart) query = query.gte('date', filterStart);
     if (filterEnd) query = query.lte('date', filterEnd);
     if (filterVendor) query = query.eq('vendor_id', filterVendor);
+    if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi)); // Filter Grouping
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -276,8 +285,7 @@ export default function App() {
       fetchAllData();
     }
   };
-
-  return (
+    return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
@@ -476,25 +484,40 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
+              {/* KODE 1: Vendor & Harga */}
               {formData.mutation_type === "1" && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
-                  <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
-                    <option value="">-- Pilih Vendor --</option>
-                    {masterVendors.map(v => (
-                      <option key={v.id} value={v.id}>{v.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
+                    <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Vendor --</option>
+                      {masterVendors.map(v => (
+                        <option key={v.id} value={v.id}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
+                    <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
+                  </div>
+                </>
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">Gudang</label>
+                <label className="block text-sm font-medium mb-1">
+                  {formData.mutation_type === "1" ? "Gudang / Zona (Penyimpanan)" : "Tujuan (FLOOR / Zona D / dll)"}
+                </label>
                 <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
-                  <option value="">-- Pilih Gudang --</option>
-                  {masterWarehouses.map(w => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
+                  <option value="">-- Pilih Tujuan --</option>
+                  {formData.mutation_type === "1" ? (
+                    masterWarehouses.filter(w => ['ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))
+                  ) : (
+                    masterWarehouses.filter(w => ['FLOOR', 'ZONA D', 'ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -503,16 +526,19 @@ export default function App() {
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
 
-              {formData.mutation_type === "1" && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
-                  <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
-                </div>
-              )}
-
               <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1">Keterangan Tambahan</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} className="w-full p-2 border rounded-lg" rows={2}></textarea>
+                <label className="block text-sm font-medium mb-1">
+                  {formData.mutation_type === "1" ? "Keterangan Tambahan (Opsional)" : "Keterangan (Wajib: Dipasang di mana / Rusak kenapa?)"}
+                </label>
+                <textarea 
+                  name="description" 
+                  value={formData.description} 
+                  onChange={handleChange} 
+                  className={`w-full p-2 border rounded-lg ${formData.mutation_type !== "1" && !formData.description ? 'border-red-300 bg-red-50' : ''}`} 
+                  rows={3}
+                  required={formData.mutation_type !== "1"}
+                  placeholder={formData.mutation_type === "1" ? "Catatan tambahan..." : "Contoh: Dipasang di Mesin Oval I / Rusak kena air / Service di Zona D"}
+                ></textarea>
               </div>
 
               <div className="col-span-2 mt-4 flex gap-2">
@@ -638,7 +664,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB LAPORAN */}
+        {/* TAB LAPORAN (Dengan Filter Grouping Kode Mutasi) */}
         {activeTab === "report" && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Transaksi</h2>
@@ -654,11 +680,20 @@ export default function App() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Vendor</label>
-                <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)} className="p-2 border rounded-lg min-w-[200px]">
+                <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)} className="p-2 border rounded-lg min-w-[180px]">
                   <option value="">Semua Vendor</option>
                   {masterVendors.map(v => (
                     <option key={v.id} value={v.id}>{v.name}</option>
                   ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Kode Mutasi (Group)</label>
+                <select value={filterMutasi} onChange={e => setFilterMutasi(e.target.value)} className="p-2 border rounded-lg min-w-[150px]">
+                  <option value="">Semua Kode</option>
+                  <option value="1">1 - Masuk (IN)</option>
+                  <option value="2">2 - Keluar (OUT)</option>
+                  <option value="3">3 - Rusak (Reject)</option>
                 </select>
               </div>
               
