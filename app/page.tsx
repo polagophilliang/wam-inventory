@@ -109,34 +109,7 @@ export default function App() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-              {/* TOMBOL RESET FORM (Di atas tombol simpan) */}
-              <div className="col-span-2 mt-4 flex gap-2">
-                <button 
-                  type="button"
-                  onClick={() => {
-                    // Reset semua state form
-                    setFormData({ 
-                      date: new Date().toISOString().split('T')[0], 
-                      mutation_type: "1", 
-                      warehouse_id: "", 
-                      vendor_id: "", 
-                      qty: "", 
-                      price: "", 
-                      description: "" 
-                    });
-                    setSelectedItem(null);
-                    setSearchQuery("");
-                    setShowDropdown(false);
-                  }}
-                  className="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Reset
-                </button>
-                <button type="submit" disabled={isLoading} className={`w-2/3 font-bold py-3 rounded-lg text-white ${isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}>
-                  {isLoading ? "Menyimpan..." : "Simpan Transaksi"}
-                </button>
-              </div>
-  
+
   // 3. Simpan Transaksi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,6 +279,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
+      {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
         <div className="p-4 flex items-center gap-3 border-b border-slate-700">
           <img 
@@ -417,7 +391,6 @@ export default function App() {
               {showAddItemForm ? "Tutup Form Barang Baru" : "+ Tambah Barang Baru (Master)"}
             </button>
 
-            {/* Form Tambah Barang Baru */}
             {showAddItemForm && (
               <div className="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-200 mb-6">
                 <h3 className="text-lg font-bold mb-4 text-blue-800">Tambah Master Barang Baru</h3>
@@ -503,7 +476,6 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
-              {/* BLOK VENDOR (Hanya Muncul Kalau Kode 1) */}
               {formData.mutation_type === "1" && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
@@ -531,7 +503,6 @@ export default function App() {
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
 
-              {/* BLOK HARGA (Hanya Muncul Kalau Kode 1) */}
               {formData.mutation_type === "1" && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
@@ -544,22 +515,33 @@ export default function App() {
                 <textarea name="description" value={formData.description} onChange={handleChange} className="w-full p-2 border rounded-lg" rows={2}></textarea>
               </div>
 
-              <div className="col-span-2 mt-4">
-                <button type="submit" disabled={isLoading} className={`w-full font-bold py-3 rounded-lg text-white ${isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}>
+              <div className="col-span-2 mt-4 flex gap-2">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setFormData({ date: new Date().toISOString().split('T')[0], mutation_type: "1", warehouse_id: "", vendor_id: "", qty: "", price: "", description: "" });
+                    setSelectedItem(null);
+                    setSearchQuery("");
+                    setShowDropdown(false);
+                  }}
+                  className="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Reset
+                </button>
+                <button type="submit" disabled={isLoading} className={`w-2/3 font-bold py-3 rounded-lg text-white ${isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}>
                   {isLoading ? "Menyimpan..." : "Simpan Transaksi"}
                 </button>
               </div>
             </form>
           </div>
         )}
-        
                 {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
             
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-4 flex gap-4 items-center flex-wrap">
-              <div className="flex-1 min-w-[300px]">
+              <div className="flex-1 min-w-[300px] flex gap-2">
                 <input 
                   type="text" 
                   placeholder="Cari nama barang atau SKU..." 
@@ -567,25 +549,12 @@ export default function App() {
                   onChange={(e) => setSearchMaster(e.target.value)}
                   className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white transition-colors"
                 />
-                {/* TOMBOL CLEAR PENCARIAN */}
                 <button 
                   onClick={() => { setSearchMaster(""); setFilterKategori(""); }}
                   className="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors whitespace-nowrap"
                 >
                   Clear
                 </button>
-              </div>
-              <div>
-                <select 
-                  value={filterKategori} 
-                  onChange={(e) => setFilterKategori(e.target.value)}
-                  className="p-2 border rounded-lg min-w-[200px]"
-                >
-                  <option value="">Semua Kategori</option>
-                  {/* ... (isi kategori) ... */}
-                </select>
-              </div>
-            </div>
               </div>
               <div>
                 <select 
@@ -815,4 +784,3 @@ export default function App() {
     </div>
   );
 }
-        
