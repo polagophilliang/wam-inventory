@@ -563,24 +563,24 @@ export default function App() {
                             <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
                             <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
                             <td className="p-2 border-b text-[10px]">
-  {item.stok_tersedia === 0 ? (
-    keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan ? (
-      <span className="text-red-500 italic">{keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan}</span>
-    ) : (
-      <span className="text-gray-400 italic">- (Stok Kosong)</span>
-    )
-  ) : (
-    lokasi.length === 0 ? "-" : (
-      <div className="flex flex-col gap-1">
-        {lokasi.map((l, i) => (
-          <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
-            {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
-          </span>
-        ))}
-      </div>
-    )
-  )}
-</td>
+                        {item.stok_tersedia === 0 ? (
+                                keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan ? (
+                                  <span className="text-red-500 italic">{keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan}</span>
+                                ) : (
+                                  <span className="text-gray-400 italic">- (Stok Kosong)</span>
+                                )
+                              ) : (
+                                lokasi.length === 0 ? "-" : (
+                                  <div className="flex flex-col gap-1">
+                                    {lokasi.map((l, i) => (
+                                      <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
+                                        {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )
+                              )}
+                            </td>
                           </tr>
                         );
                       })
