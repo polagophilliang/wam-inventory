@@ -38,7 +38,7 @@ export default function App() {
   const [filterStart, setFilterStart] = useState("");
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
-  const [filterMutasi, setFilterMutasi] = useState(""); // Filter Grouping Kode
+  const [filterMutasi, setFilterMutasi] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   // State Laporan Bulanan
@@ -116,7 +116,6 @@ export default function App() {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
     
-    // Validasi
     if (formData.mutation_type === "1") {
       if (!formData.vendor_id) return alert("Pilih Vendor dulu!");
       if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
@@ -188,11 +187,11 @@ export default function App() {
     }
   };
 
-    // 5. Ambil Data Laporan
+  // 5. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
-      id, created_at, mutation_type, qty, price, description, // <--- TAMBAHIN description
+      id, created_at, mutation_type, qty, price, description,
       item_id, items(name, sku),
       vendor_id, vendors(name),
       warehouse_id, warehouses(name)
@@ -276,7 +275,7 @@ export default function App() {
     }]);
 
     setIsLoading(false);
-        if (error) {
+    if (error) {
       alert("Gagal nambah barang: " + error.message);
     } else {
       alert(`🎉 Barang Baru Berhasil Ditambahkan!\n\nSKU: ${sku}`);
@@ -284,8 +283,8 @@ export default function App() {
       setShowAddItemForm(false);
       fetchAllData();
     }
-  }; 
-
+  };
+  
   return 
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
