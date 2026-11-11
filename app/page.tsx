@@ -67,7 +67,7 @@ export default function App() {
     setIsLoadingBulanan(false);
   };
 
-    // 1. Ambil Semua Data
+  // 1. Ambil Semua Data
   const fetchAllData = async () => {
     const { data: items } = await supabase.from('items').select('*, categories(name)').order('name');
     if (items) setMasterItems(items);
@@ -84,10 +84,8 @@ export default function App() {
     const { data: posisi } = await supabase.from('posisi_barang').select('*');
     if (posisi) setPosisiBarang(posisi);
 
-    // --- TAMBAHAN BARU: Tarik data keterangan terakhir ---
     const { data: ket } = await supabase.from('keterangan_terakhir').select('*');
     if (ket) setKeteranganTerakhir(ket);
-    // ------------------------------------------------------
   };
 
   useEffect(() => {
@@ -116,7 +114,7 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
-    if (!formData.vendor_id) return alert("Pilih Vendor dulu!");
+    if (formData.mutation_type === "1" && !formData.vendor_id) return alert("Pilih Vendor dulu!");
     if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
     
     setIsLoading(true);
@@ -127,10 +125,10 @@ export default function App() {
         date: formData.date,
         mutation_type: parseInt(formData.mutation_type),
         item_id: selectedItem.id,
-        vendor_id: parseInt(formData.vendor_id),
+        vendor_id: formData.mutation_type === "1" ? parseInt(formData.vendor_id) : null,
         warehouse_id: parseInt(formData.warehouse_id),
         qty: parseInt(formData.qty),
-        price: parseInt(formData.price) || 0,
+        price: formData.mutation_type === "1" ? (parseInt(formData.price) || 0) : 0,
         description: formData.description
       }]);
 
@@ -147,7 +145,42 @@ export default function App() {
     }
   };
 
-  // 4. Ambil Data Laporan
+  // 4. Batalkan Transaksi (Reversal)
+  const handleCancelTransaction = async (row: any) => {
+    if (!confirm(`Yakin mau batalkan transaksi ${row.items?.name} sebesar ${row.qty}? Stok akan dikembalikan.`)) return;
+    
+    setIsLoading(true);
+    
+    let reversalType = 1; 
+    if (row.mutation_type === 1) reversalType = 2; 
+    if (row.mutation_type === 2) reversalType = 1; 
+    if (row.mutation_type === 3) reversalType = 1; 
+
+    const { error } = await supabase
+      .from('transactions')
+      .insert([{ 
+        date: new Date().toISOString().split('T')[0],
+        mutation_type: reversalType,
+        item_id: row.item_id,
+        vendor_id: row.vendor_id || null,
+        warehouse_id: row.warehouse_id,
+        qty: row.qty,
+        price: 0,
+        description: `[BATAL] ${row.description || ''}`
+      }]);
+
+    setIsLoading(false);
+
+    if (error) {
+      alert("Gagal membatalkan: " + error.message);
+    } else {
+      alert("🎉 Transaksi Berhasil Dibatalkan! Stok sudah dikembalikan.");
+      fetchReport(); 
+      fetchAllData(); 
+    }
+  };
+
+  // 5. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
@@ -172,7 +205,7 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  // 5. Fungsi Download Excel (CSV)
+  // 6. Fungsi Download Excel (CSV)
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
     
@@ -206,7 +239,7 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // 6. Fungsi Tambah Barang Baru
+  // 7. Fungsi Tambah Barang Baru
   const handleAddNewItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.name || !newItem.category_id || !newItem.unit || !newItem.prefix) {
@@ -243,7 +276,8 @@ export default function App() {
       fetchAllData();
     }
   };
-    return (
+  {/* bagian2 */}
+  return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
@@ -344,7 +378,8 @@ export default function App() {
             </div>
           </div>
         )}
-                {/* TAB DATA ENTRY */}
+
+        {/* TAB DATA ENTRY */}
         {activeTab === "entry" && (
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Input Transaksi Gudang</h2>
@@ -433,7 +468,7 @@ export default function App() {
                 )}
               </div>
 
-                            <div>
+              <div>
                 <label className="block text-sm font-medium mb-1 text-gray-500">CODE S/N</label>
                 <input type="text" value={selectedItem?.sku || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 font-mono text-xs" />
               </div>
@@ -442,7 +477,7 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
-              {/* --- BLOK VENDOR (Hanya Muncul Kalau Kode 1) --- */}
+              {/* BLOK VENDOR (Hanya Muncul Kalau Kode 1) */}
               {formData.mutation_type === "1" && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
@@ -455,7 +490,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* BLOK GUDANG (Selalu Muncul) */}
               <div>
                 <label className="block text-sm font-medium mb-1">Gudang</label>
                 <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
@@ -466,13 +500,12 @@ export default function App() {
                 </select>
               </div>
 
-              {/* BLOK QTY (Selalu Muncul) */}
               <div>
                 <label className="block text-sm font-medium mb-1">Qty</label>
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
 
-              {/* --- BLOK HARGA (Hanya Muncul Kalau Kode 1) --- */}
+              {/* BLOK HARGA (Hanya Muncul Kalau Kode 1) */}
               {formData.mutation_type === "1" && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
@@ -493,8 +526,8 @@ export default function App() {
             </form>
           </div>
         )}
-        
-        {/* TAB MASTER BARANG */}
+        {/* bagian 3 Master Barang, Laporan, dan Lap. Bulanan*/}
+                {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
@@ -563,7 +596,7 @@ export default function App() {
                             <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
                             <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
                             <td className="p-2 border-b text-[10px]">
-                        {item.stok_tersedia === 0 ? (
+                              {item.stok_tersedia === 0 ? (
                                 keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan ? (
                                   <span className="text-red-500 italic">{keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan}</span>
                                 ) : (
@@ -637,11 +670,12 @@ export default function App() {
                     <th className="p-2 border-b text-center">Kode Mutasi</th>
                     <th className="p-2 border-b text-center">Qty</th>
                     <th className="p-2 border-b text-right">Total Harga</th>
+                    <th className="p-2 border-b text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.length === 0 ? (
-                    <tr><td colSpan={7} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
+                    <tr><td colSpan={8} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
                     reportData.map((row: any) => (
                       <tr key={row.id} className="hover:bg-gray-50">
@@ -655,6 +689,14 @@ export default function App() {
                         <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
                         <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
                         <td className="p-2 border-b text-right text-gray-700">{row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}</td>
+                        <td className="p-2 border-b text-center">
+                          <button 
+                            onClick={() => handleCancelTransaction(row)}
+                            className="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-semibold hover:bg-red-200"
+                          >
+                            Batal
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -728,3 +770,4 @@ export default function App() {
     </div>
   );
 }
+        
