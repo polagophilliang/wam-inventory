@@ -16,6 +16,68 @@ export default function App() {
   const [stokData, setStokData] = useState<any[]>([]);
   const [posisiBarang, setPosisiBarang] = useState<any[]>([]);
   const [searchMaster, setSearchMaster] = useState("");
+    // State buat Form Tambah Barang Baru
+  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [newItem, setNewItem] = useState({
+    name: "",
+    category_id: "",
+    unit: "",
+    prefix: ""
+  });
+
+  // Fungsi buat nyimpen Barang Baru + Generate SKU
+  const handleAddNewItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItem.name || !newItem.category_id || !newItem.unit) {
+      return alert("Lengkapi Nama, Kategori, dan Satuan dulu, Buddy!");
+    }
+    setIsLoading(true);
+
+    // 1. Ambil prefix dari kategori yang dipilih (misal CON, SPA, dll)
+    const selectedCategory = masterItems.find(i => i.category_id === parseInt(newItem.category_id))?.categories;
+    // Atau, kita ambil dari tabel categories langsung. Tapi buat simpel, kita pake prefix manual dulu
+    const prefix = newItem.prefix.toUpperCase();
+    
+    if (prefix.length !== 3) {
+      setIsLoading(false);
+      return alert("Prefix harus 3 huruf, contoh: CON, SPA, AKS.");
+    }
+
+    // 2. Hitung urutan barang di kategori ini (buat dapet 001, 002, dst)
+    const { count } = await supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('prefix', prefix);
+    
+    const urutan = (count || 0) + 1;
+    const sequence = String(urutan).padStart(3, '0');
+    
+    // 3. Bikin SKU
+    const cleanName = newItem.name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); // Buang spasi/simbol
+    const sku = `${prefix}-${sequence}-${cleanName.slice(0, 7)}`;
+
+    // 4. Simpan ke database
+    const { error } = await supabase
+      .from('items')
+      .insert([{
+        sku: sku,
+        name: newItem.name.toUpperCase(),
+        category_id: parseInt(newItem.category_id),
+        unit: newItem.unit.toUpperCase(),
+        prefix: prefix
+      }]);
+
+    setIsLoading(false);
+
+    if (error) {
+      alert("Gagal nambah barang: " + error.message);
+    } else {
+      alert(`🎉 Barang Baru Berhasil Ditambahkan!\n\nSKU: ${sku}`);
+      setNewItem({ name: "", category_id: "", unit: "", prefix: "" });
+      setShowAddItemForm(false);
+      fetchAllData(); // Refresh data
+    }
+  };
   const [filterKategori, setFilterKategori] = useState("");
   
   // State Form
@@ -295,6 +357,51 @@ export default function App() {
         {activeTab === "entry" && (
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Input Transaksi Gudang</h2>
+                        <button 
+              onClick={() => setShowAddItemForm(!showAddItemForm)}
+              className="mb-4 bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-200 transition-colors"
+            >
+              {showAddItemForm ? "Tutup Form Barang Baru" : "+ Tambah Barang Baru (Master)"}
+            </button>
+
+            {/* Form Tambah Barang Baru */}
+            {showAddItemForm && (
+              <div className="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-200 mb-6">
+                <h3 className="text-lg font-bold mb-4 text-blue-800">Tambah Master Barang Baru</h3>
+                <form onSubmit={handleAddNewItem} className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nama Barang</label>
+                    <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-2 border rounded-lg" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Prefix SKU (3 Huruf)</label>
+                    <input type="text" value={newItem.prefix} onChange={e => setNewItem({...newItem, prefix: e.target.value})} maxLength={3} placeholder="CON, SPA, AKS" className="w-full p-2 border rounded-lg" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Kategori</label>
+                    <select value={newItem.category_id} onChange={e => setNewItem({...newItem, category_id: e.target.value})} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Kategori --</option>
+                      <option value="1">AKSESORIS</option>
+                      <option value="2">ARMADA</option>
+                      <option value="3">CONSUMABLE</option>
+                      <option value="4">MESIN</option>
+                      <option value="5">SPAREPART</option>
+                      <option value="6">TOOLS</option>
+                      <option value="7">SERVICES</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Satuan</label>
+                    <input type="text" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} placeholder="PCS, KG, LITER" className="w-full p-2 border rounded-lg" required />
+                  </div>
+                  <div className="col-span-2">
+                    <button type="submit" disabled={isLoading} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                      {isLoading ? "Menyimpan..." : "Simpan Barang Baru"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 grid grid-cols-2 gap-4">
               
               <div>
