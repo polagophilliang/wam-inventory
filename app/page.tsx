@@ -109,7 +109,34 @@ export default function App() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
+              {/* TOMBOL RESET FORM (Di atas tombol simpan) */}
+              <div className="col-span-2 mt-4 flex gap-2">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    // Reset semua state form
+                    setFormData({ 
+                      date: new Date().toISOString().split('T')[0], 
+                      mutation_type: "1", 
+                      warehouse_id: "", 
+                      vendor_id: "", 
+                      qty: "", 
+                      price: "", 
+                      description: "" 
+                    });
+                    setSelectedItem(null);
+                    setSearchQuery("");
+                    setShowDropdown(false);
+                  }}
+                  className="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Reset
+                </button>
+                <button type="submit" disabled={isLoading} className={`w-2/3 font-bold py-3 rounded-lg text-white ${isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}>
+                  {isLoading ? "Menyimpan..." : "Simpan Transaksi"}
+                </button>
+              </div>
+  
   // 3. Simpan Transaksi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -541,6 +568,25 @@ export default function App() {
                   onChange={(e) => setSearchMaster(e.target.value)}
                   className="w-full p-2 border rounded-lg bg-gray-50 focus:bg-white transition-colors"
                 />
+                {/* TOMBOL CLEAR PENCARIAN */}
+                <button 
+                  onClick={() => { setSearchMaster(""); setFilterKategori(""); }}
+                  className="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              </div>
+              <div>
+                <select 
+                  value={filterKategori} 
+                  onChange={(e) => setFilterKategori(e.target.value)}
+                  className="p-2 border rounded-lg min-w-[200px]"
+                >
+                  <option value="">Semua Kategori</option>
+                  {/* ... (isi kategori) ... */}
+                </select>
+              </div>
+            </div>
               </div>
               <div>
                 <select 
