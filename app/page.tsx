@@ -188,11 +188,11 @@ export default function App() {
     }
   };
 
-  // 5. Ambil Data Laporan (Dengan Grouping Kode Mutasi)
+    // 5. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
-      id, created_at, mutation_type, qty, price,
+      id, created_at, mutation_type, qty, price, description, // <--- TAMBAHIN description
       item_id, items(name, sku),
       vendor_id, vendors(name),
       warehouse_id, warehouses(name)
@@ -201,7 +201,7 @@ export default function App() {
     if (filterStart) query = query.gte('date', filterStart);
     if (filterEnd) query = query.lte('date', filterEnd);
     if (filterVendor) query = query.eq('vendor_id', filterVendor);
-    if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi)); // Filter Grouping
+    if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi));
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -722,22 +722,40 @@ export default function App() {
                     <th className="p-2 border-b text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
+                                <tbody>
                   {reportData.length === 0 ? (
                     <tr><td colSpan={8} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
                     reportData.map((row: any) => (
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="p-2 border-b text-gray-600">{row.created_at?.split('T')[0]}</td>
-                        <td className="p-2 border-b font-medium text-slate-800">{row.vendors?.name}</td>
+                        
+                        {/* Vendor: Kalau kosong, muncul strip */}
+                        <td className="p-2 border-b font-medium text-slate-800">{row.vendors?.name || '-'}</td>
+                        
+                        {/* Barang + SKU */}
                         <td className="p-2 border-b">
                           <div className="font-medium text-slate-800">{row.items?.name}</div>
                           <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
                         </td>
-                        <td className="p-2 border-b text-gray-600">{row.warehouses?.name}</td>
+                        
+                        {/* Gudang + Keterangan (Remark) */}
+                        <td className="p-2 border-b text-gray-600">
+                          {row.warehouses?.name}
+                          {row.description && (
+                            <div className="text-[10px] text-slate-500 italic mt-1">{row.description}</div>
+                          )}
+                        </td>
+                        
                         <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
                         <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
-                        <td className="p-2 border-b text-right text-gray-700">{row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}</td>
+                        
+                        {/* Harga: Cuma muncul kalau Kode 1 */}
+                        <td className="p-2 border-b text-right text-gray-700">
+                          {row.mutation_type === 1 && row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}
+                        </td>
+                        
+                        {/* Tombol Batal */}
                         <td className="p-2 border-b text-center">
                           <button 
                             onClick={() => handleCancelTransaction(row)}
@@ -750,10 +768,6 @@ export default function App() {
                     ))
                   )}
                 </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {/* TAB LAPORAN BULANAN */}
         {activeTab === "lap_bulanan" && (
