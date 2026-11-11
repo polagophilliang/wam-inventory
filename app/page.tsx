@@ -284,8 +284,7 @@ export default function App() {
       fetchAllData();
     }
   };
-  
-  return 
+    return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
@@ -484,7 +483,6 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
-              {/* KODE 1: Vendor & Harga */}
               {formData.mutation_type === "1" && (
                 <>
                   <div>
@@ -561,7 +559,8 @@ export default function App() {
             </form>
           </div>
         )}
-                {/* TAB MASTER BARANG */}
+
+        {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
@@ -664,7 +663,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB LAPORAN (Dengan Filter Grouping Kode Mutasi) */}
+        {/* TAB LAPORAN */}
         {activeTab === "report" && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Transaksi</h2>
@@ -722,7 +721,7 @@ export default function App() {
                     <th className="p-2 border-b text-center">Aksi</th>
                   </tr>
                 </thead>
-                                <tbody>
+                <tbody>
                   {reportData.length === 0 ? (
                     <tr><td colSpan={8} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
@@ -730,16 +729,13 @@ export default function App() {
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="p-2 border-b text-gray-600">{row.created_at?.split('T')[0]}</td>
                         
-                        {/* Vendor: Kalau kosong, muncul strip */}
                         <td className="p-2 border-b font-medium text-slate-800">{row.vendors?.name || '-'}</td>
                         
-                        {/* Barang + SKU */}
                         <td className="p-2 border-b">
                           <div className="font-medium text-slate-800">{row.items?.name}</div>
                           <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
                         </td>
                         
-                        {/* Gudang + Keterangan (Remark) */}
                         <td className="p-2 border-b text-gray-600">
                           {row.warehouses?.name}
                           {row.description && (
@@ -750,12 +746,10 @@ export default function App() {
                         <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
                         <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
                         
-                        {/* Harga: Cuma muncul kalau Kode 1 */}
                         <td className="p-2 border-b text-right text-gray-700">
                           {row.mutation_type === 1 && row.price ? `Rp ${(row.price * row.qty).toLocaleString()}` : '-'}
                         </td>
                         
-                        {/* Tombol Batal */}
                         <td className="p-2 border-b text-center">
                           <button 
                             onClick={() => handleCancelTransaction(row)}
@@ -768,6 +762,10 @@ export default function App() {
                     ))
                   )}
                 </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* TAB LAPORAN BULANAN */}
         {activeTab === "lap_bulanan" && (
