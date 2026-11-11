@@ -303,7 +303,7 @@ export default function App() {
       fetchAllData();
     }
   };
-  {/* bagian2 */}
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
@@ -553,7 +553,7 @@ export default function App() {
             </form>
           </div>
         )}
-        {/* bagian 3 Master Barang, Laporan, dan Lap. Bulanan*/}
+        
                 {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
