@@ -15,6 +15,7 @@ export default function App() {
   const [masterWarehouses, setMasterWarehouses] = useState<any[]>([]);
   const [stokData, setStokData] = useState<any[]>([]);
   const [posisiBarang, setPosisiBarang] = useState<any[]>([]);
+  const [keteranganTerakhir, setKeteranganTerakhir] = useState<any[]>([]);
   
   // State Form Entry
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -66,7 +67,7 @@ export default function App() {
     setIsLoadingBulanan(false);
   };
 
-  // 1. Ambil Semua Data
+    // 1. Ambil Semua Data
   const fetchAllData = async () => {
     const { data: items } = await supabase.from('items').select('*, categories(name)').order('name');
     if (items) setMasterItems(items);
@@ -82,6 +83,11 @@ export default function App() {
 
     const { data: posisi } = await supabase.from('posisi_barang').select('*');
     if (posisi) setPosisiBarang(posisi);
+
+    // --- TAMBAHAN BARU: Tarik data keterangan terakhir ---
+    const { data: ket } = await supabase.from('keterangan_terakhir').select('*');
+    if (ket) setKeteranganTerakhir(ket);
+    // ------------------------------------------------------
   };
 
   useEffect(() => {
@@ -427,7 +433,7 @@ export default function App() {
                 )}
               </div>
 
-              <div>
+                            <div>
                 <label className="block text-sm font-medium mb-1 text-gray-500">CODE S/N</label>
                 <input type="text" value={selectedItem?.sku || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 font-mono text-xs" />
               </div>
@@ -436,15 +442,20 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
-                <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
-                  <option value="">-- Pilih Vendor --</option>
-                  {masterVendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.name}</option>
-                  ))}
-                </select>
-              </div>
+              {/* --- BLOK VENDOR (Hanya Muncul Kalau Kode 1) --- */}
+              {formData.mutation_type === "1" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
+                  <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
+                    <option value="">-- Pilih Vendor --</option>
+                    {masterVendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* BLOK GUDANG (Selalu Muncul) */}
               <div>
                 <label className="block text-sm font-medium mb-1">Gudang</label>
                 <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
@@ -455,14 +466,19 @@ export default function App() {
                 </select>
               </div>
 
+              {/* BLOK QTY (Selalu Muncul) */}
               <div>
                 <label className="block text-sm font-medium mb-1">Qty</label>
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
-                <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
-              </div>
+
+              {/* --- BLOK HARGA (Hanya Muncul Kalau Kode 1) --- */}
+              {formData.mutation_type === "1" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
+                  <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
+                </div>
+              )}
 
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">Keterangan Tambahan</label>
@@ -477,7 +493,7 @@ export default function App() {
             </form>
           </div>
         )}
-
+        
         {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
@@ -547,16 +563,24 @@ export default function App() {
                             <td className="p-2 border-b text-center text-yellow-600 font-medium">{item.total_rusak}</td>
                             <td className="p-2 border-b text-center font-semibold text-blue-700">{item.stok_tersedia}</td>
                             <td className="p-2 border-b text-[10px]">
-                              {lokasi.length === 0 ? "-" : (
-                                <div className="flex flex-col gap-1">
-                                  {lokasi.map((l, i) => (
-                                    <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
-                                      {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </td>
+  {item.stok_tersedia === 0 ? (
+    keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan ? (
+      <span className="text-red-500 italic">{keteranganTerakhir.find(k => k.item_id === item.item_id)?.keterangan}</span>
+    ) : (
+      <span className="text-gray-400 italic">- (Stok Kosong)</span>
+    )
+  ) : (
+    lokasi.length === 0 ? "-" : (
+      <div className="flex flex-col gap-1">
+        {lokasi.map((l, i) => (
+          <span key={i} className="bg-slate-100 px-1.5 py-0.5 rounded inline-block w-max border border-slate-200 text-slate-600">
+            {l.nama_gudang}: <span className="font-semibold text-slate-800">{l.qty_tersedia}</span>
+          </span>
+        ))}
+      </div>
+    )
+  )}
+</td>
                           </tr>
                         );
                       })
