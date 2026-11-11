@@ -284,7 +284,7 @@ export default function App() {
       fetchAllData();
     }
   };
-    return (
+  return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
