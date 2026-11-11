@@ -306,7 +306,6 @@ export default function App() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
-      {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
         <div className="p-4 flex items-center gap-3 border-b border-slate-700">
           <img 
