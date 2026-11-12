@@ -50,7 +50,8 @@ export default function App() {
   // State Master Search
   const [searchMaster, setSearchMaster] = useState("");
   const [filterKategori, setFilterKategori] = useState("");
-
+  const [filterZonaDashboard, setFilterZonaDashboard] = useState("");
+  
   // State Form Tambah Barang Baru
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItem, setNewItem] = useState({
@@ -311,7 +312,7 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         
-        {/* TAB DASHBOARD */}
+                {/* TAB DASHBOARD */}
         {activeTab === "dashboard" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Dashboard Inventory</h2>
@@ -331,9 +332,27 @@ export default function App() {
               </div>
             </div>
 
-            <h3 className="text-xl font-bold mb-4 text-slate-800">Posisi Stok per Gudang</h3>
+            {/* FILTER ZONA DASHBOARD */}
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-800">Posisi Stok per Gudang</h3>
+              <div className="flex gap-2">
+                <select 
+                  value={filterZonaDashboard} 
+                  onChange={(e) => setFilterZonaDashboard(e.target.value)}
+                  className="p-2 border rounded-lg text-sm"
+                >
+                  <option value="">Semua Zona</option>
+                  {masterWarehouses.map(w => (
+                    <option key={w.id} value={w.name}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {masterWarehouses.map((wh) => {
+              {masterWarehouses
+                .filter(wh => filterZonaDashboard === "" || wh.name === filterZonaDashboard)
+                .map((wh) => {
                 const itemsDiGudang = posisiBarang.filter(r => r.nama_gudang === wh.name);
                 
                 let borderColor = "border-slate-500";
@@ -385,7 +404,7 @@ export default function App() {
               })}
             </div>
           </div>
-        )}
+        )}   
 
         {/* TAB DATA ENTRY */}
         {activeTab === "entry" && (
