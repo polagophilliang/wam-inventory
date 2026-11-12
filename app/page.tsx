@@ -544,7 +544,24 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">Qty</label>
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
-
+              {/* INFO STOK TERSEDIA */}
+              {selectedItem && (
+                <div className="col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-800 mb-1">📍 Stok Tersedia:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {posisiBarang
+                      .filter(p => p.sku === selectedItem.sku)
+                      .map((p, idx) => (
+                        <span key={idx} className="bg-white px-3 py-1 rounded text-xs border border-blue-300 font-semibold text-blue-700">
+                          {p.nama_gudang}: {p.qty_tersedia}
+                        </span>
+                      ))}
+                    {posisiBarang.filter(p => p.sku === selectedItem.sku).length === 0 && (
+                      <span className="text-xs text-red-500 italic font-semibold">Stok kosong di semua gudang</span>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">
                   {formData.mutation_type === "1" ? "Keterangan Tambahan (Opsional)" : "Keterangan (Wajib: Dipasang di mana / Rusak kenapa?)"}
