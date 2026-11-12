@@ -39,6 +39,7 @@ export default function App() {
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
   const [filterMutasi, setFilterMutasi] = useState("");
+  const [filterZona, setFilterZona] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   // State Laporan Bulanan
@@ -189,6 +190,7 @@ export default function App() {
   };
 
   // 5. Ambil Data Laporan
+    // 5. Ambil Data Laporan (Dengan Filter Vendor & Zona)
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
@@ -202,6 +204,7 @@ export default function App() {
     if (filterEnd) query = query.lte('date', filterEnd);
     if (filterVendor) query = query.eq('vendor_id', filterVendor);
     if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi));
+    if (filterZona) query = query.eq('warehouse_id', parseInt(filterZona)); // <--- FILTER ZONA
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -213,7 +216,6 @@ export default function App() {
     }
     setIsLoadingReport(false);
   };
-
   // 6. Fungsi Download Excel (CSV)
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
@@ -697,7 +699,7 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">Sampai Tanggal</label>
                 <input type="date" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} className="p-2 border rounded-lg" />
               </div>
-              <div>
+                            <div>
                 <label className="block text-sm font-medium mb-1">Vendor</label>
                 <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)} className="p-2 border rounded-lg min-w-[180px]">
                   <option value="">Semua Vendor</option>
@@ -706,6 +708,18 @@ export default function App() {
                   ))}
                 </select>
               </div>
+
+              {/* INI DIA FILTER ZONA YANG BARU */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Zona / Gudang</label>
+                <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="p-2 border rounded-lg min-w-[180px]">
+                  <option value="">Semua Zona</option>
+                  {masterWarehouses.map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Kode Mutasi (Group)</label>
                 <select value={filterMutasi} onChange={e => setFilterMutasi(e.target.value)} className="p-2 border rounded-lg min-w-[150px]">
