@@ -39,7 +39,7 @@ export default function App() {
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
   const [filterMutasi, setFilterMutasi] = useState("");
-  const [filterZona, setFilterZona] = useState("");
+  const [filterZona, setFilterZona] = useState(""); // Filter Zona
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   // State Laporan Bulanan
@@ -52,7 +52,7 @@ export default function App() {
   const [searchMaster, setSearchMaster] = useState("");
   const [filterKategori, setFilterKategori] = useState("");
   const [filterZonaDashboard, setFilterZonaDashboard] = useState("");
-  
+
   // State Form Tambah Barang Baru
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItem, setNewItem] = useState({
@@ -113,7 +113,7 @@ export default function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. Simpan Transaksi
+  // 3. Simpan Transaksi (Satpam Stok Dimatikan Sementara)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
@@ -189,8 +189,7 @@ export default function App() {
     }
   };
 
-  // 5. Ambil Data Laporan
-    // 5. Ambil Data Laporan (Dengan Filter Vendor & Zona)
+  // 5. Ambil Data Laporan (Dengan Filter Zona)
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
@@ -204,7 +203,7 @@ export default function App() {
     if (filterEnd) query = query.lte('date', filterEnd);
     if (filterVendor) query = query.eq('vendor_id', filterVendor);
     if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi));
-    if (filterZona) query = query.eq('warehouse_id', parseInt(filterZona)); // <--- FILTER ZONA
+    if (filterZona) query = query.eq('warehouse_id', parseInt(filterZona)); // Filter Zona
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -216,17 +215,18 @@ export default function App() {
     }
     setIsLoadingReport(false);
   };
+
   // 6. Fungsi Download Excel (CSV)
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
     
-    const headers = ["Tanggal", "Vendor", "Barang", "Gudang", "Kode Mutasi", "Qty", "Harga Satuan", "Total Harga"];
+    const headers = ["Tanggal", "Zona", "Barang", "Gudang", "Kode Mutasi", "Qty", "Harga Satuan", "Total Harga"];
     
     const rows = reportData.map((row: any) => {
       const total = row.price ? row.price * row.qty : 0;
       return [
         row.created_at?.split('T')[0] || "-",
-        row.vendors?.name || "-",
+        row.warehouses?.name || "-",
         row.items?.name || "-",
         row.warehouses?.name || "-",
         row.mutation_type, 
@@ -277,7 +277,7 @@ export default function App() {
       prefix: prefix
     }]);
 
-        setIsLoading(false);
+    setIsLoading(false);
     if (error) {
       alert("Gagal nambah barang: " + error.message);
     } else {
@@ -286,9 +286,8 @@ export default function App() {
       setShowAddItemForm(false);
       fetchAllData();
     }
-  }; 
-
-  return 
+  };
+    return (
     <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
@@ -314,7 +313,7 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
         
-                {/* TAB DASHBOARD */}
+        {/* TAB DASHBOARD */}
         {activeTab === "dashboard" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Dashboard Inventory</h2>
@@ -406,7 +405,7 @@ export default function App() {
               })}
             </div>
           </div>
-        )}   
+        )}
 
         {/* TAB DATA ENTRY */}
         {activeTab === "entry" && (
@@ -581,8 +580,7 @@ export default function App() {
             </form>
           </div>
         )}
-
-        {/* TAB MASTER BARANG */}
+                {/* TAB MASTER BARANG */}
         {activeTab === "master" && (
           <div>
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Master Barang & Stok</h2>
@@ -685,7 +683,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB LAPORAN */}
+        {/* TAB LAPORAN (Dengan Filter Zona & Grouping) */}
         {activeTab === "report" && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Transaksi</h2>
@@ -699,17 +697,6 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">Sampai Tanggal</label>
                 <input type="date" value={filterEnd} onChange={e => setFilterEnd(e.target.value)} className="p-2 border rounded-lg" />
               </div>
-                            <div>
-                <label className="block text-sm font-medium mb-1">Vendor</label>
-                <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)} className="p-2 border rounded-lg min-w-[180px]">
-                  <option value="">Semua Vendor</option>
-                  {masterVendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* INI DIA FILTER ZONA YANG BARU */}
               <div>
                 <label className="block text-sm font-medium mb-1">Zona / Gudang</label>
                 <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="p-2 border rounded-lg min-w-[180px]">
@@ -719,7 +706,6 @@ export default function App() {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">Kode Mutasi (Group)</label>
                 <select value={filterMutasi} onChange={e => setFilterMutasi(e.target.value)} className="p-2 border rounded-lg min-w-[150px]">
@@ -746,10 +732,9 @@ export default function App() {
                 <thead>
                   <tr className="bg-gray-100 text-gray-700 font-semibold">
                     <th className="p-2 border-b">Tanggal</th>
-                    <th className="p-2 border-b">Vendor</th>
+                    <th className="p-2 border-b">Zona</th>
                     <th className="p-2 border-b">Barang</th>
-                    <th className="p-2 border-b">Gudang</th>
-                    <th className="p-2 border-b text-center">Kode Mutasi</th>
+                    <th className="p-2 border-b">Kode Mutasi</th>
                     <th className="p-2 border-b text-center">Qty</th>
                     <th className="p-2 border-b text-right">Total Harga</th>
                     <th className="p-2 border-b text-center">Aksi</th>
@@ -757,21 +742,20 @@ export default function App() {
                 </thead>
                 <tbody>
                   {reportData.length === 0 ? (
-                    <tr><td colSpan={8} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
+                    <tr><td colSpan={7} className="p-4 text-center text-gray-500">Belum ada data / Silakan klik Tampilkan.</td></tr>
                   ) : (
                     reportData.map((row: any) => (
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="p-2 border-b text-gray-600">{row.created_at?.split('T')[0]}</td>
-                        <td className="p-2 border-b font-medium text-slate-800">{row.vendors?.name || '-'}</td>
-                        <td className="p-2 border-b">
-                          <div className="font-medium text-slate-800">{row.items?.name}</div>
-                          <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
-                        </td>
                         <td className="p-2 border-b text-gray-600">
                           {row.warehouses?.name}
                           {row.description && (
                             <div className="text-[10px] text-slate-500 italic mt-1">{row.description}</div>
                           )}
+                        </td>
+                        <td className="p-2 border-b">
+                          <div className="font-medium text-slate-800">{row.items?.name}</div>
+                          <div className="font-mono text-[10px] text-gray-500">{row.items?.sku}</div>
                         </td>
                         <td className="p-2 border-b text-center font-semibold text-slate-700">{row.mutation_type}</td>
                         <td className="p-2 border-b text-center font-semibold text-slate-800">{row.qty}</td>
