@@ -39,7 +39,7 @@ export default function App() {
   const [filterEnd, setFilterEnd] = useState("");
   const [filterVendor, setFilterVendor] = useState("");
   const [filterMutasi, setFilterMutasi] = useState("");
-  const [filterZona, setFilterZona] = useState(""); // Filter Zona
+  const [filterZona, setFilterZona] = useState("");
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
   // State Laporan Bulanan
@@ -60,6 +60,16 @@ export default function App() {
     category_id: "",
     unit: "",
     prefix: ""
+  });
+
+  // State Mutasi
+  const [showMutasiForm, setShowMutasiForm] = useState(false);
+  const [mutasiData, setMutasiData] = useState({
+    sku: "",
+    name: "",
+    from_warehouse: "",
+    to_warehouse: "",
+    qty: ""
   });
 
   const fetchLaporanBulanan = async () => {
@@ -113,7 +123,7 @@ export default function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. Simpan Transaksi (Satpam Stok Dimatikan Sementara)
+  // 3. Simpan Transaksi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
@@ -189,7 +199,21 @@ export default function App() {
     }
   };
 
-  // 5. Ambil Data Laporan (Dengan Filter Zona)
+  // 5. Hapus Transaksi (Fitur Baru)
+  const handleDeleteTransaction = async (row: any) => {
+    if (!confirm("Yakin mau HAPUS transaksi ini? Stok akan dihitung ulang (BISA NGAWUR).")) return;
+    setIsLoading(true);
+    const { error } = await supabase.from('transactions').delete().eq('id', row.id);
+    setIsLoading(false);
+    if (error) alert("Gagal hapus: " + error.message);
+    else {
+      alert("🎉 Transaksi Dihapus!");
+      fetchReport();
+      fetchAllData();
+    }
+  };
+
+  // 6. Ambil Data Laporan
   const fetchReport = async () => {
     setIsLoadingReport(true);
     let query = supabase.from('transactions').select(`
@@ -203,7 +227,7 @@ export default function App() {
     if (filterEnd) query = query.lte('date', filterEnd);
     if (filterVendor) query = query.eq('vendor_id', filterVendor);
     if (filterMutasi) query = query.eq('mutation_type', parseInt(filterMutasi));
-    if (filterZona) query = query.eq('warehouse_id', parseInt(filterZona)); // Filter Zona
+    if (filterZona) query = query.eq('warehouse_id', parseInt(filterZona));
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
@@ -216,7 +240,7 @@ export default function App() {
     setIsLoadingReport(false);
   };
 
-  // 6. Fungsi Download Excel (CSV)
+  // 7. Fungsi Download Excel (CSV)
   const downloadCSV = () => {
     if (reportData.length === 0) return alert("Tidak ada data untuk didownload.");
     
@@ -250,7 +274,7 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // 7. Fungsi Tambah Barang Baru
+  // 8. Fungsi Tambah Barang Baru
   const handleAddNewItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.name || !newItem.category_id || !newItem.unit || !newItem.prefix) {
@@ -287,8 +311,55 @@ export default function App() {
       fetchAllData();
     }
   };
-    return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
+
+  // 9. Fungsi Mutasi Barang (Pindah Zona)
+  const handleMutasi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mutasiData.from_warehouse || !mutasiData.to_warehouse || !mutasiData.qty) {
+      return alert("Lengkapi Zona Asal, Zona Tujuan, dan Qty!");
+    }
+    if (mutasiData.from_warehouse === mutasiData.to_warehouse) {
+      return alert("Zona Asal dan Tujuan nggak boleh sama!");
+    }
+    setIsLoading(true);
+    
+    // 1. Catat Keluar dari Zona Asal (Kode 2)
+    const { error: errorOut } = await supabase.from('transactions').insert([{
+      date: new Date().toISOString().split('T')[0],
+      mutation_type: 2,
+      item_id: masterItems.find(i => i.sku === mutasiData.sku)?.id,
+      vendor_id: null,
+      warehouse_id: parseInt(mutasiData.from_warehouse),
+      qty: parseInt(mutasiData.qty),
+      price: 0,
+      description: `Mutasi ke ${mutasiData.to_warehouse}`
+    }]);
+    
+    // 2. Catat Masuk ke Zona Tujuan (Kode 1)
+    const { error: errorIn } = await supabase.from('transactions').insert([{
+      date: new Date().toISOString().split('T')[0],
+      mutation_type: 1,
+      item_id: masterItems.find(i => i.sku === mutasiData.sku)?.id,
+      vendor_id: null,
+      warehouse_id: parseInt(mutasiData.to_warehouse),
+      qty: parseInt(mutasiData.qty),
+      price: 0,
+      description: `Mutasi dari ${mutasiData.from_warehouse}`
+    }]);
+    
+    setIsLoading(false);
+    if (errorOut || errorIn) {
+      alert("Gagal mutasi: " + (errorOut?.message || errorIn?.message));
+    } else {
+      alert("🎉 Mutasi Berhasil! Stok sudah dipindah.");
+      setShowMutasiForm(false);
+      setMutasiData({ sku: "", name: "", from_warehouse: "", to_warehouse: "", qty: "" });
+      fetchAllData();
+    }
+  };
+
+  return (
+        <div className="flex flex-col md:flex-row h-screen bg-gray-50 overflow-hidden">
       {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-white flex flex-col shrink-0">
         <div className="p-4 flex items-center gap-3 border-b border-slate-700">
@@ -544,6 +615,7 @@ export default function App() {
                 <label className="block text-sm font-medium mb-1">Qty</label>
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
+
               {/* INFO STOK TERSEDIA */}
               {selectedItem && (
                 <div className="col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -562,6 +634,7 @@ export default function App() {
                   </div>
                 </div>
               )}
+
               <div className="col-span-2">
                 <label className="block text-sm font-medium mb-1">
                   {formData.mutation_type === "1" ? "Keterangan Tambahan (Opsional)" : "Keterangan (Wajib: Dipasang di mana / Rusak kenapa?)"}
@@ -636,6 +709,45 @@ export default function App() {
               </div>
             </div>
 
+            {/* FORM MUTASI */}
+            {showMutasiForm && (
+              <div className="bg-blue-50 p-4 rounded-xl shadow-sm border border-blue-200 mb-4">
+                <h3 className="text-lg font-bold mb-2 text-blue-800">Mutasi Barang: {mutasiData.name}</h3>
+                <form onSubmit={handleMutasi} className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Dari Zona</label>
+                    <select value={mutasiData.from_warehouse} onChange={e => setMutasiData({...mutasiData, from_warehouse: e.target.value})} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Asal --</option>
+                      {masterWarehouses.map(w => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Ke Zona</label>
+                    <select value={mutasiData.to_warehouse} onChange={e => setMutasiData({...mutasiData, to_warehouse: e.target.value})} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Tujuan --</option>
+                      {masterWarehouses.map(w => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Qty</label>
+                    <input type="number" value={mutasiData.qty} onChange={e => setMutasiData({...mutasiData, qty: e.target.value})} className="w-full p-2 border rounded-lg" required />
+                  </div>
+                  <div className="col-span-3 flex gap-2">
+                    <button type="submit" disabled={isLoading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                      {isLoading ? "Memproses..." : "Proses Mutasi"}
+                    </button>
+                    <button type="button" onClick={() => setShowMutasiForm(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300">
+                      Batal
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs min-w-max">
                 <thead>
@@ -648,11 +760,12 @@ export default function App() {
                     <th className="p-2 border-b text-center bg-yellow-50 text-yellow-700">Rusak</th>
                     <th className="p-2 border-b text-center bg-blue-50 text-blue-700">Tersedia</th>
                     <th className="p-2 border-b">Posisi Gudang</th>
+                    <th className="p-2 border-b text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stokData.length === 0 ? (
-                    <tr><td colSpan={8} className="p-4 text-center text-gray-500">Memuat data / Belum ada data.</td></tr>
+                    <tr><td colSpan={9} className="p-4 text-center text-gray-500">Memuat data / Belum ada data.</td></tr>
                   ) : (
                     stokData
                       .filter(item => 
@@ -690,6 +803,17 @@ export default function App() {
                                 )
                               )}
                             </td>
+                            <td className="p-2 border-b text-center">
+                              <button 
+                                onClick={() => {
+                                  setMutasiData({ sku: item.sku, name: item.name, from_warehouse: "", to_warehouse: "", qty: "" });
+                                  setShowMutasiForm(true);
+                                }}
+                                className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-semibold hover:bg-blue-200"
+                              >
+                                Mutasi
+                              </button>
+                            </td>
                           </tr>
                         );
                       })
@@ -700,7 +824,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB LAPORAN (Dengan Filter Zona & Grouping) */}
+        {/* TAB LAPORAN */}
         {activeTab === "report" && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold mb-6 text-slate-800">Laporan Transaksi</h2>
@@ -782,9 +906,15 @@ export default function App() {
                         <td className="p-2 border-b text-center">
                           <button 
                             onClick={() => handleCancelTransaction(row)}
-                            className="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-semibold hover:bg-red-200"
+                            className="bg-red-100 text-red-600 px-2 py-1 rounded text-[10px] font-semibold hover:bg-red-200 mr-1"
                           >
                             Batal
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTransaction(row)}
+                            className="bg-red-200 text-red-700 px-2 py-1 rounded text-[10px] font-semibold hover:bg-red-300"
+                          >
+                            Hapus
                           </button>
                         </td>
                       </tr>
