@@ -123,11 +123,15 @@ export default function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 3. Simpan Transaksi
+    // 3. Simpan Transaksi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
+    
+    // Validasi: Kode 1 wajib Gudang, Kode 2/3 wajib Keterangan
+    if (formData.mutation_type === "1") {
       if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
+      // Vendor opsional, jadi nggak perlu validasi
     } else {
       if (!formData.warehouse_id) return alert("Pilih Tujuan dulu!");
       if (!formData.description) return alert("Keterangan WAJIB diisi buat Barang Keluar/Rusak!");
@@ -141,7 +145,7 @@ export default function App() {
         date: formData.date,
         mutation_type: parseInt(formData.mutation_type),
         item_id: selectedItem.id,
-        vendor_id: formData.mutation_type === "1" ? parseInt(formData.vendor_id) : null,
+        vendor_id: formData.vendor_id ? parseInt(formData.vendor_id) : null, // Vendor opsional
         warehouse_id: parseInt(formData.warehouse_id),
         qty: parseInt(formData.qty),
         price: formData.mutation_type === "1" ? (parseInt(formData.price) || 0) : 0,
