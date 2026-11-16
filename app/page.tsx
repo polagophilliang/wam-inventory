@@ -123,15 +123,13 @@ export default function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-    // 3. Simpan Transaksi
+      // 3. Simpan Transaksi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
     
-    // Validasi: Kode 1 wajib Gudang, Kode 2/3 wajib Keterangan
     if (formData.mutation_type === "1") {
       if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
-      // Vendor opsional, jadi nggak perlu validasi
     } else {
       if (!formData.warehouse_id) return alert("Pilih Tujuan dulu!");
       if (!formData.description) return alert("Keterangan WAJIB diisi buat Barang Keluar/Rusak!");
@@ -139,13 +137,39 @@ export default function App() {
     
     setIsLoading(true);
 
+    // --- LOGIKA VENDOR BARU ---
+    let vendorIdToSave = formData.vendor_id ? parseInt(formData.vendor_id) : null;
+    
+    if (formData.mutation_type === "1" && formData.vendor_name && !formData.vendor_id) {
+      // Cek apakah vendor udah ada
+      const existingVendor = masterVendors.find(v => v.name === formData.vendor_name);
+      if (existingVendor) {
+        vendorIdToSave = existingVendor.id;
+      } else {
+        // Bikin vendor baru
+        const { data: newVendor, error: vendorError } = await supabase
+          .from('vendors')
+          .insert([{ name: formData.vendor_name }])
+          .select()
+          .single();
+        
+        if (vendorError) {
+          alert("Gagal nambah vendor: " + vendorError.message);
+          setIsLoading(false);
+          return;
+        }
+        vendorIdToSave = newVendor.id;
+        fetchAllData(); // Refresh masterVendors
+      }
+    }
+
     const { error } = await supabase
       .from('transactions')
       .insert([{ 
         date: formData.date,
         mutation_type: parseInt(formData.mutation_type),
         item_id: selectedItem.id,
-        vendor_id: formData.vendor_id ? parseInt(formData.vendor_id) : null, // Vendor opsional
+        vendor_id: formData.mutation_type === "1" ? vendorIdToSave : null,
         warehouse_id: parseInt(formData.warehouse_id),
         qty: parseInt(formData.qty),
         price: formData.mutation_type === "1" ? (parseInt(formData.price) || 0) : 0,
@@ -158,7 +182,7 @@ export default function App() {
       alert("Gagal menyimpan: " + error.message);
     } else {
       alert("🎉 Transaksi Berhasil Disimpan!");
-      setFormData({ ...formData, qty: "", price: "", description: "", vendor_id: "", warehouse_id: "" });
+      setFormData({ ...formData, qty: "", price: "", description: "", vendor_id: "", vendor_name: "", warehouse_id: "" });
       setSelectedItem(null);
       setSearchQuery("");
       fetchAllData(); 
@@ -528,7 +552,7 @@ export default function App() {
                     </select>
                   </div>
                   
-                  {/* DROPDOWN SATUAN */}
+                                                      {/* DROPDOWN SATUAN */}
                   <div>
                     <label className="block text-sm font-medium mb-1">Satuan</label>
                     <select value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} className="w-full p-2 border rounded-lg" required>
@@ -607,24 +631,109 @@ export default function App() {
                 <input type="text" value={selectedItem?.categories?.name || ""} readOnly className="w-full p-2 border rounded-lg bg-gray-100 text-sm" />
               </div>
 
+              {/* BLOK VENDOR & HARGA (Cuma Muncul di Kode 1) */}
               {formData.mutation_type === "1" && (
                 <>
                   <div>
-                                      <div>
                     <label className="block text-sm font-medium mb-1">Vendor / Supplier (Opsional)</label>
-                    <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg">
-                      <option value="">-- Pilih Vendor --</option>
+                    <input 
+                      type="text" 
+                      name="vendor_name"
+                      list="vendor-list"
+                      value={formData.vendor_name}
+                      onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value.toUpperCase(), vendor_id: "" })}
+                      className="w-full p-2 border rounded-lg" 
+                      placeholder="Ketik atau pilih vendor..."
+                    />
+                    <datalist id="vendor-list">
                       {masterVendors.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
+                        <option key={v.id} value={v.name} />
                       ))}
-                    </select>
-                  </div>                 
+                    </datalist>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
+                    <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
+                  </div>
+
+                  {/* REKOMENDASI VENDOR PER SKU */}
+                  {selectedItem && (
+                    <div className="col-span-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Rekomendasi Vendor untuk {selectedItem.name}:</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {masterItems
+                          .filter(i => i.sku === selectedItem.sku)
+                          .map(i => i.vendor_id)
+                          .filter((value, index, self) => value && self.indexOf(value) === index)
+                          .map(vendorId => {
+                            const vendor = masterVendors.find(v => v.id === vendorId);
+                            return vendor ? (
+                              <span key={vendorId} className="bg-white px-2 py-1 rounded text-xs border border-gray-300 text-gray-700">
+                                {vendor.name}
+                              </span>
+                            ) : null;
+                          })}
+                        {masterItems.filter(i => i.sku === selectedItem.sku).length === 0 && (
+                          <span className="text-xs text-gray-400 italic">Belum ada rekomendasi vendor untuk barang ini.</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* BLOK GUDANG (Selalu Muncul) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  {formData.mutation_type === "1" ? "Gudang / Zona (Penyimpanan)" : "Tujuan (FLOOR / Zona D / dll)"}
+                </label>
+                <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
+                  <option value="">-- Pilih Tujuan --</option>
+                  {formData.mutation_type === "1" ? (
+                    masterWarehouses.filter(w => ['ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))
+                  ) : (
+                    masterWarehouses.filter(w => ['FLOOR', 'ZONA D', 'ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Qty</label>
+                <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
+              </div>
+
+              {/* BLOK VENDOR & HARGA (Cuma Muncul di Kode 1) */}
+              {formData.mutation_type === "1" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Vendor / Supplier (Opsional)</label>
+                    <input 
+                      type="text" 
+                      name="vendor_name"
+                      list="vendor-list"
+                      value={formData.vendor_name}
+                      onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value.toUpperCase(), vendor_id: "" })}
+                      className="w-full p-2 border rounded-lg" 
+                      placeholder="Ketik atau pilih vendor..."
+                    />
+                    <datalist id="vendor-list">
+                      {masterVendors.map(v => (
+                        <option key={v.id} value={v.name} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
                     <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
                   </div>
                 </>
               )}
 
+              {/* BLOK GUDANG (Selalu Muncul) */}
               <div>
                 <label className="block text-sm font-medium mb-1">
                   {formData.mutation_type === "1" ? "Gudang / Zona (Penyimpanan)" : "Tujuan (FLOOR / Zona D / dll)"}
