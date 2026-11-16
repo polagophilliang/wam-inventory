@@ -796,10 +796,19 @@ export default function App() {
                 <button 
                   type="button"
                   onClick={() => {
-                    setFormData({ date: new Date().toISOString().split('T')[0], mutation_type: "1", warehouse_id: "", vendor_id: "", qty: "", price: "", description: "" });
-                    setSelectedItem(null);
-                    setSearchQuery("");
-                    setShowDropdown(false);
+                    setFormData({ 
+                    date: new Date().toISOString().split('T')[0], 
+                    mutation_type: "1", 
+                    warehouse_id: "", 
+                    vendor_id: "", 
+                    vendor_name: "", 
+                    qty: "", 
+                    price: "", 
+                    description: "" 
+                  });
+                  setSelectedItem(null);
+                  setSearchQuery("");
+                  setShowDropdown(false);
                   }}
                   className="w-1/3 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors"
                 >
