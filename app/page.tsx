@@ -701,57 +701,6 @@ export default function App() {
                 <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
               </div>
 
-              {/* BLOK VENDOR & HARGA (Cuma Muncul di Kode 1) */}
-              {formData.mutation_type === "1" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Vendor / Supplier (Opsional)</label>
-                    <input 
-                      type="text" 
-                      name="vendor_name"
-                      list="vendor-list"
-                      value={formData.vendor_name}
-                      onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value.toUpperCase(), vendor_id: "" })}
-                      className="w-full p-2 border rounded-lg" 
-                      placeholder="Ketik atau pilih vendor..."
-                    />
-                    <datalist id="vendor-list">
-                      {masterVendors.map(v => (
-                        <option key={v.id} value={v.name} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
-                    <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
-                  </div>
-                </>
-              )}
-
-              {/* BLOK GUDANG (Selalu Muncul) */}
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  {formData.mutation_type === "1" ? "Gudang / Zona (Penyimpanan)" : "Tujuan (FLOOR / Zona D / dll)"}
-                </label>
-                <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
-                  <option value="">-- Pilih Tujuan --</option>
-                  {formData.mutation_type === "1" ? (
-                    masterWarehouses.filter(w => ['ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))
-                  ) : (
-                    masterWarehouses.filter(w => ['FLOOR', 'ZONA D', 'ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Qty</label>
-                <input type="number" name="qty" value={formData.qty} onChange={handleChange} className="w-full p-2 border rounded-lg" required />
-              </div>
-
               {/* INFO STOK TERSEDIA */}
               {selectedItem && (
                 <div className="col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
