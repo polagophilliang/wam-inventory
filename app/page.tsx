@@ -689,17 +689,11 @@ export default function App() {
                   {formData.mutation_type === "1" ? "Gudang / Zona (Penyimpanan)" : "Tujuan (FLOOR / Zona D / dll)"}
                 </label>
                 <select name="warehouse_id" value={formData.warehouse_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
-                  <option value="">-- Pilih Tujuan --</option>
-                  {formData.mutation_type === "1" ? (
-                    masterWarehouses.filter(w => ['FLOOR', 'ZONA D', 'ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))
-                  ) : (
-                    masterWarehouses.filter(w => ['FLOOR', 'ZONA D', 'ZONA A', 'ZONA B', 'ZONA C'].includes(w.name)).map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))
-                  )}
-                </select>
+                <option value="">-- Pilih Tujuan --</option>
+                {masterWarehouses.map(w => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
               </div>
 
               <div>
