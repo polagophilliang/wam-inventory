@@ -127,9 +127,6 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return alert("Pilih barang dulu, Buddy!");
-    
-    if (formData.mutation_type === "1") {
-      if (!formData.vendor_id) return alert("Pilih Vendor dulu!");
       if (!formData.warehouse_id) return alert("Pilih Gudang dulu!");
     } else {
       if (!formData.warehouse_id) return alert("Pilih Tujuan dulu!");
@@ -490,7 +487,7 @@ export default function App() {
               {showAddItemForm ? "Tutup Form Barang Baru" : "+ Tambah Barang Baru (Master)"}
             </button>
 
-            {showAddItemForm && (
+                        {showAddItemForm && (
               <div className="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-200 mb-6">
                 <h3 className="text-lg font-bold mb-4 text-blue-800">Tambah Master Barang Baru</h3>
                 <form onSubmit={handleAddNewItem} className="grid grid-cols-2 gap-4">
@@ -498,10 +495,21 @@ export default function App() {
                     <label className="block text-sm font-medium mb-1">Nama Barang</label>
                     <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full p-2 border rounded-lg" required />
                   </div>
+                  
+                  {/* DROPDOWN PREFIX */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Prefix SKU (3 Huruf)</label>
-                    <input type="text" value={newItem.prefix} onChange={e => setNewItem({...newItem, prefix: e.target.value})} maxLength={3} placeholder="CON, SPA, AKS" className="w-full p-2 border rounded-lg" required />
+                    <label className="block text-sm font-medium mb-1">Prefix SKU</label>
+                    <select value={newItem.prefix} onChange={e => setNewItem({...newItem, prefix: e.target.value})} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Prefix --</option>
+                      <option value="AKS">AKS - AKSESORIS</option>
+                      <option value="CON">CON - CONSUMABLE</option>
+                      <option value="MES">MES - MESIN</option>
+                      <option value="SPA">SPA - SPAREPART</option>
+                      <option value="TOO">TOO - TOOLS</option>
+                      <option value="SRV">SRV - SERVICES</option>
+                    </select>
                   </div>
+                  
                   <div>
                     <label className="block text-sm font-medium mb-1">Kategori</label>
                     <select value={newItem.category_id} onChange={e => setNewItem({...newItem, category_id: e.target.value})} className="w-full p-2 border rounded-lg" required>
@@ -515,10 +523,30 @@ export default function App() {
                       <option value="7">SERVICES</option>
                     </select>
                   </div>
+                  
+                  {/* DROPDOWN SATUAN */}
                   <div>
                     <label className="block text-sm font-medium mb-1">Satuan</label>
-                    <input type="text" value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} placeholder="PCS, KG, LITER" className="w-full p-2 border rounded-lg" required />
+                    <select value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value})} className="w-full p-2 border rounded-lg" required>
+                      <option value="">-- Pilih Satuan --</option>
+                      <option value="UNIT">UNIT</option>
+                      <option value="PCS">PCS</option>
+                      <option value="KG">KG</option>
+                      <option value="LTR">LTR</option>
+                      <option value="GR">GR</option>
+                      <option value="PEL">PEL</option>
+                      <option value="ROLL">ROLL</option>
+                      <option value="LITER">LITER</option>
+                      <option value="SET">SET</option>
+                      <option value="GALON">GALON</option>
+                      <option value="LEMBAR">LEMBAR</option>
+                      <option value="METER">METER</option>
+                      <option value="TABUNG">TABUNG</option>
+                      <option value="BOTOL">BOTOL</option>
+                      <option value="BATANG">BATANG</option>
+                    </select>
                   </div>
+                  
                   <div className="col-span-2">
                     <button type="submit" disabled={isLoading} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                       {isLoading ? "Menyimpan..." : "Simpan Barang Baru"}
@@ -578,15 +606,15 @@ export default function App() {
               {formData.mutation_type === "1" && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Vendor / Supplier</label>
-                    <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg" required>
+                                      <div>
+                    <label className="block text-sm font-medium mb-1">Vendor / Supplier (Opsional)</label>
+                    <select name="vendor_id" value={formData.vendor_id} onChange={handleChange} className="w-full p-2 border rounded-lg">
                       <option value="">-- Pilih Vendor --</option>
                       {masterVendors.map(v => (
                         <option key={v.id} value={v.id}>{v.name}</option>
                       ))}
                     </select>
-                  </div>
-                  <div>
+                  </div>                 
                     <label className="block text-sm font-medium mb-1">Harga (Rp)</label>
                     <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border rounded-lg" />
                   </div>
