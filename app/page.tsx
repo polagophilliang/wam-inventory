@@ -24,14 +24,15 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    mutation_type: "1",
-    warehouse_id: "",
-    vendor_id: "",
-    qty: "",
-    price: "",
-    description: ""
-  });
+  date: new Date().toISOString().split('T')[0],
+  mutation_type: "1",
+  warehouse_id: "",
+  vendor_id: "",
+  vendor_name: "", 
+  qty: "",
+  price: "",
+  description: ""
+});
 
   // State Laporan
   const [reportData, setReportData] = useState<any[]>([]);
